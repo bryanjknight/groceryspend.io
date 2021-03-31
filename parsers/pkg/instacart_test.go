@@ -38,8 +38,7 @@ func TestInstacartReceipt(t *testing.T) {
 
 	tests := []test{
 		{OrderNumber: "wegmans-replace-refund", ExpectedTotalItems: 27, ExpectedSubtotal: 150.96, ExpectedTotal: 188.44},
-		// TODO: bj's had a coupon on the pampers, not shown in one receipt view but is shown in another
-		//			 for now, we won't show coupons, but definitely needs to be revisited
+		// Note that bj's has a different subtotal. There's a bug in instacart, so we will calculate subtotal ourselves
 		{OrderNumber: "bj-wholesale-all-found", ExpectedTotalItems: 6, ExpectedSubtotal: 202.93, ExpectedTotal: 255.62},
 	}
 
