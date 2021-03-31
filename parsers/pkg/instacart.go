@@ -153,8 +153,6 @@ func parseTaxTipFees(sectionDiv *html.Node) (InstacartTipTaxesFees, error) {
 
 		}
 
-		println(fmt.Sprintf("%v, %v", name, cost))
-
 		switch name {
 		case "Sales Tax":
 			retval.SalesTax = cost
