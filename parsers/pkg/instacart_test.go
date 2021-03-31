@@ -28,38 +28,54 @@ func readFileAsString(filename string) string {
 }
 
 func TestInstacartReceipt(t *testing.T) {
-	testDataDir := getTestDataDir()
-	orderNumber := "1234567890" // TODO: extract into test table
-	fileContent := readFileAsString(filepath.Join(testDataDir, "instacart", fmt.Sprintf("%s.txt", orderNumber)))
-	fileContentReader := strings.NewReader(fileContent)
 
-	receiptRequest := UnparsedReceiptRequest{}
-	parsedHtml, err := html.Parse(fileContentReader)
-	if err != nil {
-		t.Errorf("Failed to parse html data: %s", err)
-	}
-	receiptRequest.Receipt = parsedHtml
-	receiptRequest.OriginalUrl = fmt.Sprintf("https://www.instacart.com/orders/%s", orderNumber)
-
-	receipt, err := Parse(receiptRequest)
-	if err != nil {
-		t.Errorf("Failed to parse receipt: %s", err)
+	type test struct {
+		OrderNumber        string
+		ExpectedTotalItems int
+		ExpectedTotalCost  float32
 	}
 
-	expectedTotalItems := 27 // TODO: extract into test table
-	if len(receipt.ParsedItems) != expectedTotalItems {
-		t.Errorf("Expected %v items, got %v", expectedTotalItems, len(receipt.ParsedItems))
+	tests := []test{
+		{OrderNumber: "wegmans-replace-refund", ExpectedTotalItems: 27, ExpectedTotalCost: 150.96},
+		// TODO: bj's had a coupon on the pampers, not shown in one receipt view but is shown in another
+		//			 for now, we won't show coupons, but definitely needs to be revisited
+		{OrderNumber: "bj-wholesale-all-found", ExpectedTotalItems: 6, ExpectedTotalCost: 202.93},
 	}
 
-	// sum the parsed items to get the subtotal
-	expectedSum := float32(150.96) // TODO: extract into test table
+	for _, test := range tests {
+		testDataDir := getTestDataDir()
+		orderNumber := test.OrderNumber
+		fileContent := readFileAsString(filepath.Join(testDataDir, "instacart", fmt.Sprintf("%s.txt", orderNumber)))
+		fileContentReader := strings.NewReader(fileContent)
 
-	actualSum := float32(0.0)
-	for _, item := range receipt.ParsedItems {
-		actualSum += item.TotalCost
-	}
+		receiptRequest := UnparsedReceiptRequest{}
+		parsedHtml, err := html.Parse(fileContentReader)
+		if err != nil {
+			t.Errorf("Failed to parse html data: %s", err)
+		}
+		receiptRequest.Receipt = parsedHtml
+		receiptRequest.OriginalUrl = fmt.Sprintf("https://www.instacart.com/orders/%s", orderNumber)
 
-	if expectedSum != actualSum {
-		t.Errorf("Expectd total sum %v, got %v", expectedSum, actualSum)
+		receipt, err := Parse(receiptRequest)
+		if err != nil {
+			t.Errorf("Failed to parse receipt: %s", err)
+		}
+
+		expectedTotalItems := test.ExpectedTotalItems
+		if len(receipt.ParsedItems) != expectedTotalItems {
+			t.Errorf("Expected %v items, got %v", expectedTotalItems, len(receipt.ParsedItems))
+		}
+
+		// sum the parsed items to get the subtotal
+		expectedSum := test.ExpectedTotalCost
+
+		actualSum := float32(0.0)
+		for _, item := range receipt.ParsedItems {
+			actualSum += item.TotalCost
+		}
+
+		if expectedSum != actualSum {
+			t.Errorf("Expectd total sum %v, got %v", expectedSum, actualSum)
+		}
 	}
 }
