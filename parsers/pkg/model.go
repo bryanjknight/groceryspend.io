@@ -41,8 +41,11 @@ type ParsedReceipt struct {
 	OriginalUrl string
 	OrderNumber string
 	ParsedItems []ParsedItem
+	// TODO: break out tax, tip, and fees into 1-to-many relationship
+	//			 as some jurisdictions could have multiple taxes
 	SalesTax    float32
 	Tip         float32
 	ServiceFee  float32
 	DeliveryFee float32
+	Discounts   float32
 }

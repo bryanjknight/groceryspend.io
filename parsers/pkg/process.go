@@ -7,7 +7,7 @@ import (
 
 func Parse(request UnparsedReceiptRequest) (ParsedReceipt, error) {
 	if strings.Contains(request.OriginalUrl, "instacart.com") {
-		return ParseInstcartHtml(request.Receipt)
+		return ParseInstcartHtmlReceipt(request.Receipt)
 	}
 
 	return ParsedReceipt{}, errors.New("unable to match URL with parser")

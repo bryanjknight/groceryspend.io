@@ -13,6 +13,7 @@ func TestStringToUSDAmount(t *testing.T) {
 		{input: "$123.45", output: 123.45},
 		{input: "$123", output: 123.0},
 		{input: " $123.45", output: 123.45},
+		{input: " -$3.00", output: -3.00},
 	}
 
 	for _, test := range tests {

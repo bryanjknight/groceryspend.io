@@ -9,6 +9,14 @@ import (
 	"golang.org/x/net/html"
 )
 
+type InstacartTipTaxesFees struct {
+	SalesTax    float32
+	Tip         float32
+	ServiceFee  float32
+	DeliveryFee float32
+	Discounts   float32
+}
+
 func parseLineItem(li *html.Node) (ParsedItem, error) {
 	// this is where assumptions are made, and thus the most likely
 	// part to fail. We ASSUME that each line item is wrapped in one div, which then has two
@@ -122,12 +130,55 @@ func parseReplacementsAndRefunded(children []*html.Node) ([]ParsedItem, error) {
 	return retval, nil
 }
 
-// // TODO: Better way of extracting taxes and fees
-// func parseTaxTipFees(div *html.Node) (float32, float32, float32, float32, float32, error) {
-// 	return 0.0, 0.0, 0.0, 0.0, 0.0, nil
-// }
+func parseTaxTipFees(sectionDiv *html.Node) (InstacartTipTaxesFees, error) {
 
-func ParseInstcartHtml(doc *html.Node) (ParsedReceipt, error) {
+	retval := InstacartTipTaxesFees{}
+
+	divs := GetElementsByTagName(sectionDiv, "div")
+
+	for _, div := range divs {
+
+		pTags := GetElementsByTagName(div, "p")
+
+		if len(pTags) != 2 {
+			println("Didn't get two p tags for an element, skipping")
+			continue
+		}
+
+		name := pTags[0].FirstChild.Data
+		cost, err := ParseStringToUSDAmount(pTags[1].FirstChild.Data)
+		if err != nil {
+			println("Unable to parse %v as a money value, skipping", pTags[1].FirstChild.Data)
+			continue
+
+		}
+
+		println(fmt.Sprintf("%v, %v", name, cost))
+
+		switch name {
+		case "Sales Tax":
+			retval.SalesTax = cost
+		case "Tip":
+			retval.Tip = cost
+		case "Delivery Fee":
+			retval.DeliveryFee = cost
+		case "Service Fee":
+			retval.ServiceFee = cost
+		case "Deals Discount":
+			retval.Discounts = cost
+		case "Item Subtotal":
+			// no op
+		case "Total":
+			// no op
+		default:
+			println(fmt.Sprintf("Unexpected subtotal value: %v", name))
+		}
+	}
+
+	return retval, nil
+}
+
+func ParseInstcartHtmlReceipt(doc *html.Node) (ParsedReceipt, error) {
 	// find the "main" tag
 	mainNodes := GetElementsByTagName(doc, "main")
 	if len(mainNodes) != 1 {
@@ -158,9 +209,20 @@ func ParseInstcartHtml(doc *html.Node) (ParsedReceipt, error) {
 	itemsFound = append(itemsFound, replacements...)
 
 	// get the taxes, tips, and feeds
+	// it's main's parent's next sibling's child, so main's cousin ¯\_(ツ)_/¯
+	taxTipFeesDiv := mainNode.Parent.NextSibling.FirstChild
+	taxTipFees, err := parseTaxTipFees(taxTipFeesDiv)
+	if err != nil {
+		return ParsedReceipt{}, err
+	}
 
 	retval := ParsedReceipt{}
 	retval.ParsedItems = itemsFound
+	retval.DeliveryFee = taxTipFees.DeliveryFee
+	retval.SalesTax = taxTipFees.SalesTax
+	retval.ServiceFee = taxTipFees.ServiceFee
+	retval.Discounts = taxTipFees.Discounts
+	retval.Tip = taxTipFees.Tip
 
 	return retval, nil
 }

@@ -32,14 +32,15 @@ func TestInstacartReceipt(t *testing.T) {
 	type test struct {
 		OrderNumber        string
 		ExpectedTotalItems int
-		ExpectedTotalCost  float32
+		ExpectedSubtotal   float32
+		ExpectedTotal      float32
 	}
 
 	tests := []test{
-		{OrderNumber: "wegmans-replace-refund", ExpectedTotalItems: 27, ExpectedTotalCost: 150.96},
+		{OrderNumber: "wegmans-replace-refund", ExpectedTotalItems: 27, ExpectedSubtotal: 150.96, ExpectedTotal: 188.44},
 		// TODO: bj's had a coupon on the pampers, not shown in one receipt view but is shown in another
 		//			 for now, we won't show coupons, but definitely needs to be revisited
-		{OrderNumber: "bj-wholesale-all-found", ExpectedTotalItems: 6, ExpectedTotalCost: 202.93},
+		{OrderNumber: "bj-wholesale-all-found", ExpectedTotalItems: 6, ExpectedSubtotal: 202.93, ExpectedTotal: 255.62},
 	}
 
 	for _, test := range tests {
@@ -67,15 +68,22 @@ func TestInstacartReceipt(t *testing.T) {
 		}
 
 		// sum the parsed items to get the subtotal
-		expectedSum := test.ExpectedTotalCost
+		expectedSubtotal := test.ExpectedSubtotal
 
-		actualSum := float32(0.0)
+		actualSubtotal := float32(0.0)
 		for _, item := range receipt.ParsedItems {
-			actualSum += item.TotalCost
+			actualSubtotal += item.TotalCost
 		}
 
-		if expectedSum != actualSum {
-			t.Errorf("Expectd total sum %v, got %v", expectedSum, actualSum)
+		if expectedSubtotal != actualSubtotal {
+			t.Errorf("Expectd subtotal %v, got %v", expectedSubtotal, actualSubtotal)
+		}
+
+		expectedTotal := test.ExpectedTotal
+		actualTotal := actualSubtotal + receipt.SalesTax + receipt.ServiceFee + receipt.Tip + receipt.DeliveryFee + receipt.Discounts
+
+		if expectedTotal != actualTotal {
+			t.Errorf("Expected total %v, got %v", expectedTotal, actualTotal)
 		}
 	}
 }
