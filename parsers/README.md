@@ -1,0 +1,1 @@
+Repo for parsers of various online shopping sites
