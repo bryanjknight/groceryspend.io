@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "browser-extension"
+		},
+		{
+			"path": "data-processing"
+		}
+	],
+	"settings": {
+		"jest.disabledWorkspaceFolders": [
+			"data-processing"	
+		]
+	}
+}
