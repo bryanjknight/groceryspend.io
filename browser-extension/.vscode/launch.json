@@ -8,10 +8,7 @@
       "type": "node",
       "name": "browser-ext all jest-tests",
       "request": "launch",
-      "args": [
-        "test",
-        "--runInBand"
-      ],
+      "args": ["test", "--runInBand"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
@@ -23,11 +20,7 @@
       "type": "node",
       "name": "browser-ext selected jest-test",
       "request": "launch",
-      "args": [
-        "test",
-        "--runInBand",
-        "${file}"
-      ],
+      "args": ["test", "--runInBand", "${file}"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",

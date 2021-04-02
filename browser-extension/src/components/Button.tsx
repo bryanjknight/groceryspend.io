@@ -1,4 +1,4 @@
-import React, { MouseEventHandler } from 'react';
+import React, { MouseEventHandler } from "react";
 
 export interface ButtonProps {
   text: string;
@@ -8,6 +8,8 @@ export interface ButtonProps {
 
 export const Button = (props: ButtonProps) => {
   return (
-    <button onClick={props.onClick} data-testid={props.dataTestId || ""}>{props.text}</button>
+    <button onClick={props.onClick} data-testid={props.dataTestId || ""}>
+      {props.text}
+    </button>
   );
-}
+};

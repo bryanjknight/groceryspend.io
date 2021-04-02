@@ -7,17 +7,9 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "content.js"
-      ]
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
     }
-  ]
-  ,
-  "permissions": [
-    "activeTab",
-    "http://localhost:8080/"
-  ]
+  ],
+  "permissions": ["activeTab", "http://localhost:8080/"]
 }
