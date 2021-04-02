@@ -7,6 +7,9 @@ The browswer extension contains the following components:
 
 ## Testing
 
+Things to consider when testing:
+* Changes to the `content.ts` file require both the plugin **AND** the active tab to be refreshed
+
 ### Chrome
 
 

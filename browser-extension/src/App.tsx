@@ -21,7 +21,7 @@ export const App = (props: AppProps) => {
 
   const handleContentScriptResponse = (extractDomRequest: ExtractDomResponse) => {
     const payload = {
-      url: window.location,
+      url: extractDomRequest.url,
       timestamp: new Date().toISOString(),
       data: `<html><body>${extractDomRequest.dom}</body></html>`
     }

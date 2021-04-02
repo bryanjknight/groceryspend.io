@@ -2,6 +2,7 @@ export const EXTRACT_DOM_ACTION = 'groceryspend.get_dom';
 
 export interface ExtractDomResponse {
   dom: string;
+  url: string;
 }
 
 export function getBrowserInstance(): typeof chrome {

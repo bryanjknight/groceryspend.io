@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -37,6 +38,10 @@ type ParsedItem struct {
 	Name          string
 }
 
+func (p ParsedItem) String() string {
+	return fmt.Sprintf("%v: %v", p.Name, p.TotalCost)
+}
+
 type ParsedReceipt struct {
 	OriginalUrl string
 	OrderNumber string
@@ -48,4 +53,23 @@ type ParsedReceipt struct {
 	ServiceFee  float32
 	DeliveryFee float32
 	Discounts   float32
+}
+
+func (p ParsedReceipt) String() string {
+
+	builder := strings.Builder{}
+
+	builder.WriteString("Items:\n=====\n")
+	for _, item := range p.ParsedItems {
+		builder.WriteString(fmt.Sprintf("%v\n", item))
+	}
+
+	builder.WriteString("=====\n")
+	builder.WriteString(fmt.Sprintf("Delivery Fee: %v\n", p.DeliveryFee))
+	builder.WriteString(fmt.Sprintf("Service Fee: %v\n", p.ServiceFee))
+	builder.WriteString(fmt.Sprintf("Sales Tax: %v\n", p.SalesTax))
+	builder.WriteString(fmt.Sprintf("Tip: %v\n", p.Tip))
+	builder.WriteString(fmt.Sprintf("Discounts: %v\n", p.Discounts))
+
+	return builder.String()
 }
