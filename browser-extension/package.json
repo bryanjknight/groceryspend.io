@@ -77,8 +77,7 @@
   "lint-staged": {
     "*.{ts,tsx,css,md}": [
       "prettier --write",
-      "eslint --fix",
-      "git add"
+      "eslint --fix"
     ]
   }
 }
