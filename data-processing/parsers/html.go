@@ -1,4 +1,4 @@
-package pkg
+package parsers
 
 import (
 	"golang.org/x/net/html"

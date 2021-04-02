@@ -1,6 +1,8 @@
-package pkg
+package models
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestStringToUSDAmount(t *testing.T) {
 

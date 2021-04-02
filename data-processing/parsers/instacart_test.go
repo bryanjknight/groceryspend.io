@@ -1,4 +1,4 @@
-package pkg
+package parsers
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"golang.org/x/net/html"
+	"groceryspend.io/data-processing/models"
 )
 
 // TODO: memoize
@@ -48,7 +49,7 @@ func TestInstacartReceipt(t *testing.T) {
 		fileContent := readFileAsString(filepath.Join(testDataDir, "instacart", fmt.Sprintf("%s.txt", orderNumber)))
 		fileContentReader := strings.NewReader(fileContent)
 
-		receiptRequest := UnparsedReceiptRequest{}
+		receiptRequest := models.UnparsedReceiptRequest{}
 		parsedHtml, err := html.Parse(fileContentReader)
 		if err != nil {
 			t.Errorf("Failed to parse html data: %s", err)

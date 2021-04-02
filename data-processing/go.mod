@@ -1,4 +1,4 @@
-module groceryspend.io/parsers
+module groceryspend.io/data-processing
 
 go 1.16
 
