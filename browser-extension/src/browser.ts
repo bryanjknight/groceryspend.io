@@ -5,6 +5,7 @@ export interface ExtractDomResponse {
   url: string;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function getBrowserInstance(): typeof chrome {
   // Get extension api Chrome or Firefox
   const browserInstance = window.chrome || (window as any)["browser"];

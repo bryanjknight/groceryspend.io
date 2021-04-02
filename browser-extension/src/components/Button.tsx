@@ -6,7 +6,7 @@ export interface ButtonProps {
   onClick: MouseEventHandler<HTMLButtonElement>;
 }
 
-export const Button = (props: ButtonProps) => {
+export const Button = (props: ButtonProps): JSX.Element => {
   return (
     <button onClick={props.onClick} data-testid={props.dataTestId || ""}>
       {props.text}

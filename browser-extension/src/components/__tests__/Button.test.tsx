@@ -39,7 +39,7 @@ describe("Button Tests", () => {
     });
     const button = document.querySelector("[data-testid=blah]");
     if (!button) {
-      fail("button not found");
+      throw new Error("Button not found")
     }
     expect(button.innerHTML).toBe(text);
 

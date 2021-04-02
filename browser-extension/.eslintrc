@@ -1,5 +1,5 @@
 {
-  "extends": ["react-app", "react-app/jest"],
+  "extends": ["react-app", "react-app/jest", "plugin:@typescript-eslint/recommended"],
   "overrides": [
     {
       "files": ["**/*.stories.*"],
