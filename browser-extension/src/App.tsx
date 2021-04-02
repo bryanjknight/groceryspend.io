@@ -43,7 +43,7 @@ export const App = (props: AppProps) => {
 
   const handleSendButtonClick = () => {
     // send a message to the content script to extract the dom
-    browser.tabs.query({ active: true }, (tabs) => {
+    browser.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs.length !== 1) {
         console.error(`Expected 1 tab, got ${tabs.length}`);
         return;
