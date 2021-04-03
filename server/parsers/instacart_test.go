@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"golang.org/x/net/html"
-	"groceryspend.io/data-processing/models"
+	"groceryspend.io/server/models"
 )
 
 // TODO: memoize

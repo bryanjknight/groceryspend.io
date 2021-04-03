@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"groceryspend.io/data-processing/models"
+	"groceryspend.io/server/models"
 )
 
 func Parse(request models.UnparsedReceiptRequest) (models.ParsedReceipt, error) {

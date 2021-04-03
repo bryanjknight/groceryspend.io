@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/html"
-	"groceryspend.io/data-processing/models"
-	"groceryspend.io/data-processing/parsers"
+	"groceryspend.io/server/models"
+	"groceryspend.io/server/parsers"
 )
 
 // Routes defines all webhook routes
