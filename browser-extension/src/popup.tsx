@@ -5,7 +5,7 @@ import { App } from "./App";
 
 ReactDOM.render(
   <React.StrictMode>
-    <App webhookUrl="http://localhost:8080/webhook/receipt" />
+    <App webhookUrl="http://localhost:8080/receipts/receipt" />
   </React.StrictMode>,
   document.getElementById("root")
 );

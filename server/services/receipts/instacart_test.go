@@ -1,4 +1,4 @@
-package parsers
+package receipts
 
 import (
 	"fmt"
@@ -9,13 +9,12 @@ import (
 	"testing"
 
 	"golang.org/x/net/html"
-	"groceryspend.io/server/models"
 )
 
 // TODO: memoize
 func getTestDataDir() string {
 	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filepath.Dir(filename)), "test", "data")
+	return filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(filename))), "test", "data")
 }
 
 func readFileAsString(filename string) string {
@@ -49,15 +48,12 @@ func TestInstacartReceipt(t *testing.T) {
 		fileContent := readFileAsString(filepath.Join(testDataDir, "instacart", fmt.Sprintf("%s.txt", orderNumber)))
 		fileContentReader := strings.NewReader(fileContent)
 
-		receiptRequest := models.UnparsedReceiptRequest{}
 		parsedHtml, err := html.Parse(fileContentReader)
 		if err != nil {
 			t.Errorf("Failed to parse html data: %s", err)
 		}
-		receiptRequest.Receipt = parsedHtml
-		receiptRequest.OriginalUrl = fmt.Sprintf("https://www.instacart.com/orders/%s", orderNumber)
 
-		receipt, err := Parse(receiptRequest)
+		receipt, err := ParseInstcartHtmlReceipt(parsedHtml)
 		if err != nil {
 			t.Errorf("Failed to parse receipt: %s", err)
 		}

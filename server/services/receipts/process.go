@@ -1,13 +1,11 @@
-package parsers
+package receipts
 
 import (
 	"errors"
 	"strings"
-
-	"groceryspend.io/server/models"
 )
 
-func Parse(request models.UnparsedReceiptRequest) (models.ParsedReceipt, error) {
+func ParseReceipt(request UnparsedReceiptRequest) (ParsedReceipt, error) {
 	if strings.Contains(request.OriginalUrl, "instacart.com") {
 		return ParseInstcartHtmlReceipt(request.Receipt)
 	}
@@ -15,5 +13,5 @@ func Parse(request models.UnparsedReceiptRequest) (models.ParsedReceipt, error) 
 		return ParseWfmHtmlRecipt(request.Receipt)
 	}
 
-	return models.ParsedReceipt{}, errors.New("unable to match URL with parser")
+	return ParsedReceipt{}, errors.New("unable to match URL with parser")
 }

@@ -1,4 +1,4 @@
-package parsers
+package receipts
 
 import (
 	"reflect"

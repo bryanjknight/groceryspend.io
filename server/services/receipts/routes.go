@@ -1,4 +1,4 @@
-package api
+package receipts
 
 import (
 	"net/http"
@@ -6,13 +6,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/html"
-	"groceryspend.io/server/models"
-	"groceryspend.io/server/parsers"
 )
 
 // Routes defines all webhook routes
 func WebhookRoutes(route *gin.Engine) {
-	router := route.Group("/webhook")
+	router := route.Group("/receipts")
 
 	router.POST("receipt", handleSubmitReceipt())
 }
@@ -49,11 +47,11 @@ func handleSubmitReceipt() gin.HandlerFunc {
 		}
 
 		// submit request to be parsed
-		receiptRequest := models.UnparsedReceiptRequest{}
+		receiptRequest := UnparsedReceiptRequest{}
 		receiptRequest.Receipt = parsedHtml
 		receiptRequest.OriginalUrl = req.Url
 
-		receipt, err := parsers.Parse(receiptRequest)
+		receipt, err := ParseReceipt(receiptRequest)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
