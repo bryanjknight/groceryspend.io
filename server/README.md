@@ -4,3 +4,25 @@ This directory holds the following business logic:
 * User administration
 * Receipt Parsing
 * Receipt Analytics
+
+## Databases
+### MongoDB
+We use MongoDB as a document store for the original receipt requests. This could change over time to just a file store or a different document DB.
+
+### PostgreSQL
+We use Postgres for all of our usual RDBMS needs. We could potentially use this for documents as well; however, blob storage in RDBMS is traditionally a no-no.
+
+## Dev Tools
+
+### Mongo Express
+Connect to `localhost:18081` for access, default creds are `admin:pass`
+
+### Adminer
+Connect with the following information:
+
+| Parameter | Value |
+| --------- | ------|
+| Hostname  | `postgres` (the hostname in the docker network) |
+| Username | `postgres` (the default super user) |
+| Password | `example` |
+| Database | `postgres` | 

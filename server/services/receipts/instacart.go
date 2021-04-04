@@ -176,7 +176,7 @@ func parseTaxTipFees(sectionDiv *html.Node) (InstacartTipTaxesFees, error) {
 	return retval, nil
 }
 
-func ParseInstcartHtmlReceipt(doc *html.Node) (ParsedReceipt, error) {
+func ParseInstacartHtmlReceipt(doc *html.Node) (ParsedReceipt, error) {
 	// find the "main" tag
 	mainNodes := GetElementsByTagName(doc, "main")
 	if len(mainNodes) != 1 {

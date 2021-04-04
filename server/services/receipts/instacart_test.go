@@ -53,7 +53,7 @@ func TestInstacartReceipt(t *testing.T) {
 			t.Errorf("Failed to parse html data: %s", err)
 		}
 
-		receipt, err := ParseInstcartHtmlReceipt(parsedHtml)
+		receipt, err := ParseInstacartHtmlReceipt(parsedHtml)
 		if err != nil {
 			t.Errorf("Failed to parse receipt: %s", err)
 		}

@@ -1,18 +1,19 @@
 package receipts
 
 import (
+	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/net/html"
 )
 
 // Routes defines all webhook routes
 func WebhookRoutes(route *gin.Engine) {
 	router := route.Group("/receipts")
 
-	router.POST("receipt", handleSubmitReceipt())
+	repo := NewMongoReceiptRepository()
+
+	router.POST("receipt", handleSubmitReceipt(repo))
 }
 
 type submitReceiptForParsing struct {
@@ -21,7 +22,7 @@ type submitReceiptForParsing struct {
 	Data      string `json:"data"`
 }
 
-func handleSubmitReceipt() gin.HandlerFunc {
+func handleSubmitReceipt(repo ReceiptRepository) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
 		var req submitReceiptForParsing
@@ -34,22 +35,18 @@ func handleSubmitReceipt() gin.HandlerFunc {
 			return
 		}
 
-		// parse the data into html
-		dataReader := strings.NewReader(req.Data)
-		parsedHtml, err := html.Parse(dataReader)
-		if err != nil {
-			println("Failed to parse html")
-			println(err)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}
-
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}
-		receiptRequest.Receipt = parsedHtml
+		receiptRequest.RawHtml = req.Data
+		receiptRequest.IsoTimestamp = req.Timestamp
 		receiptRequest.OriginalUrl = req.Url
+
+		requestId, err := repo.AddReceiptRequest(receiptRequest)
+		if err != nil {
+			println(err.Error())
+		}
+
+		println(fmt.Sprintf("Object ID of request: %v", requestId))
 
 		receipt, err := ParseReceipt(receiptRequest)
 		if err != nil {
@@ -59,8 +56,18 @@ func handleSubmitReceipt() gin.HandlerFunc {
 			return
 		}
 
+		id, err := repo.AddReceipt(receipt)
+		if err != nil {
+			println(err.Error())
+		}
+
 		// print out the details
 		println(receipt.String())
+		println(fmt.Sprintf("Object ID of receipt: %v", id))
+
+		c.JSON(http.StatusAccepted, gin.H{
+			"id": id,
+		})
 
 	}
 

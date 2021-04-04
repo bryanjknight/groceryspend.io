@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"golang.org/x/net/html"
 )
 
 func ParseStringToUSDAmount(s string) (float32, error) {
@@ -20,8 +18,9 @@ func ParseStringToUSDAmount(s string) (float32, error) {
 }
 
 type UnparsedReceiptRequest struct {
-	OriginalUrl string
-	Receipt     *html.Node
+	OriginalUrl  string
+	IsoTimestamp string
+	RawHtml      string
 }
 
 type ParsedContainerSize struct {
