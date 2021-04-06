@@ -104,6 +104,9 @@ type Auth0JwtAuthMiddleware struct {
 
 func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer) *Auth0JwtAuthMiddleware {
 
+	// TODO: initialize cache wtih JWKS so that we don't have to wait for the cache
+	//			 to warm up. It's about 500ms extra, but definitely noticeable
+
 	jwtmiddleware := jwtmiddleware.New(jwtmiddleware.Options{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 
