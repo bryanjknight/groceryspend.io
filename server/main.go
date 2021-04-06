@@ -6,6 +6,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"github.com/kofalt/go-memoize"
+
 	"groceryspend.io/server/middleware/auth"
 	"groceryspend.io/server/services/receipts"
 )
@@ -15,7 +17,8 @@ func main() {
 	r := gin.Default()
 
 	// set up auth management
-	authMiddleware := auth.NewPassthroughAuthMiddleware() //NewAuth0JwtAuthMiddleware()
+	authCache := memoize.NewMemoizer(90*time.Second, 10*time.Minute)
+	authMiddleware := auth.NewAuth0JwtAuthMiddleware(authCache)
 
 	// set up CORS for requests
 	r.Use(cors.New(cors.Config{

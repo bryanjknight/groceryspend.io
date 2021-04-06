@@ -45,6 +45,10 @@ func handleSubmitReceipt(repo ReceiptRepository) gin.HandlerFunc {
 		requestId, err := repo.AddReceiptRequest(receiptRequest)
 		if err != nil {
 			println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
 		}
 
 		println(fmt.Sprintf("Object ID of request: %v", requestId))
@@ -60,6 +64,9 @@ func handleSubmitReceipt(repo ReceiptRepository) gin.HandlerFunc {
 		id, err := repo.AddReceipt(receipt)
 		if err != nil {
 			println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
 		}
 
 		// print out the details

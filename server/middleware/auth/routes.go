@@ -9,6 +9,7 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/form3tech-oss/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/kofalt/go-memoize"
 )
 
 type Response struct {
@@ -28,12 +29,11 @@ type JSONWebKeys struct {
 	X5c []string `json:"x5c"`
 }
 
-func getPemCert(token *jwt.Token) (string, error) {
-	cert := ""
-	resp, err := http.Get("https://groceryspend-dev.us.auth0.com/.well-known/jwks.json")
+func getJwks(url string) (Jwks, error) {
+	resp, err := http.Get(url)
 
 	if err != nil {
-		return cert, err
+		return Jwks{}, err
 	}
 	defer resp.Body.Close()
 
@@ -41,12 +41,32 @@ func getPemCert(token *jwt.Token) (string, error) {
 	err = json.NewDecoder(resp.Body).Decode(&jwks)
 
 	if err != nil {
+		return jwks, err
+	}
+
+	return jwks, nil
+}
+
+func getPemCert(token *jwt.Token, cache *memoize.Memoizer) (string, error) {
+	cert := ""
+	url := "https://groceryspend-dev.us.auth0.com/.well-known/jwks.json"
+
+	getJwksClosure := func() (interface{}, error) {
+		return getJwks(url)
+	}
+
+	jwks, err, cached := cache.Memoize(url, getJwksClosure)
+	if err != nil {
 		return cert, err
 	}
 
-	for k := range jwks.Keys {
-		if token.Header["kid"] == jwks.Keys[k].Kid {
-			cert = "-----BEGIN CERTIFICATE-----\n" + jwks.Keys[k].X5c[0] + "\n-----END CERTIFICATE-----"
+	if cached {
+		println("Pulling JWKS from cache")
+	}
+
+	for k := range jwks.(Jwks).Keys {
+		if token.Header["kid"] == jwks.(Jwks).Keys[k].Kid {
+			cert = "-----BEGIN CERTIFICATE-----\n" + jwks.(Jwks).Keys[k].X5c[0] + "\n-----END CERTIFICATE-----"
 		}
 	}
 
@@ -82,7 +102,7 @@ type Auth0JwtAuthMiddleware struct {
 	middleware *jwtmiddleware.JWTMiddleware
 }
 
-func NewAuth0JwtAuthMiddleware() *Auth0JwtAuthMiddleware {
+func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer) *Auth0JwtAuthMiddleware {
 
 	jwtmiddleware := jwtmiddleware.New(jwtmiddleware.Options{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
@@ -102,12 +122,12 @@ func NewAuth0JwtAuthMiddleware() *Auth0JwtAuthMiddleware {
 				return token, errors.New("invalid issuer")
 			}
 
-			cert, err := getPemCert(token)
+			cert, err := getPemCert(token, cache)
 			if err != nil {
 				panic(err.Error())
 			}
-
 			result, _ := jwt.ParseRSAPublicKeyFromPEM([]byte(cert))
+
 			return result, nil
 		},
 	})
@@ -119,7 +139,6 @@ func NewAuth0JwtAuthMiddleware() *Auth0JwtAuthMiddleware {
 
 func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 	fn := func(c *gin.Context) {
-
 		err := m.middleware.CheckJWT(c.Writer, c.Request)
 		if err != nil {
 			// token not found
