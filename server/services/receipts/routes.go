@@ -5,15 +5,16 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"groceryspend.io/server/middleware/auth"
 )
 
 // Routes defines all webhook routes
-func WebhookRoutes(route *gin.Engine) {
+func WebhookRoutes(route *gin.Engine, authMiddleware auth.AuthMiddleware) {
 	router := route.Group("/receipts")
 
 	repo := NewMongoReceiptRepository()
 
-	router.POST("receipt", handleSubmitReceipt(repo))
+	router.POST("receipt", authMiddleware.VerifySession(), handleSubmitReceipt(repo))
 }
 
 type submitReceiptForParsing struct {
