@@ -30,4 +30,20 @@ services:
     image: adminer
     restart: always
     ports:
-      - 18080:8080      
+      - 18080:8080
+
+  redis:
+    image: redis
+    restart: always
+    ports: 
+      - 6379:6379
+
+  redis-commander:
+    image: rediscommander/redis-commander
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=root
+      - HTTP_PASSWORD=qwerty
+    ports:
+      - 28081:8081
