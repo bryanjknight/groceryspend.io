@@ -20,8 +20,7 @@ func getTestDataDir() string {
 func readFileAsString(filename string) string {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
-		fmt.Println(err)
-		return ""
+		panic(err)
 	}
 
 	return string(b)
