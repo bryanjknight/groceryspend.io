@@ -14,7 +14,7 @@ func WebhookRoutes(route *gin.Engine, authMiddleware auth.AuthMiddleware) {
 
 	repo := NewMongoReceiptRepository()
 
-	router.POST("receipt", authMiddleware.VerifySession(), handleSubmitReceipt(repo))
+	router.POST("receipt", authMiddleware.VerifySession(), handleSubmitReceipt(repo, authMiddleware.UserIdFromRequest))
 }
 
 type submitReceiptForParsing struct {
@@ -23,7 +23,7 @@ type submitReceiptForParsing struct {
 	Data      string `json:"data"`
 }
 
-func handleSubmitReceipt(repo ReceiptRepository) gin.HandlerFunc {
+func handleSubmitReceipt(repo ReceiptRepository, userIdCallback func(r *http.Request) string) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
 		var req submitReceiptForParsing
@@ -41,7 +41,7 @@ func handleSubmitReceipt(repo ReceiptRepository) gin.HandlerFunc {
 		//			 Another option is to have a user collection in mongo, and we store
 		//				 * the iss and sub for auth0
 		//				 * username if it's just a simple db
-		println(auth.GetUserIdFromJwt(*c.Request))
+		println(fmt.Sprintf("User ID: '%v'", userIdCallback(c.Request)))
 
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}

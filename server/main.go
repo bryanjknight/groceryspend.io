@@ -17,8 +17,9 @@ func main() {
 	r := gin.Default()
 
 	// set up auth management
+	authConfig := "AUTH0"
 	authCache := memoize.NewMemoizer(90*time.Second, 10*time.Minute)
-	authMiddleware := auth.NewAuth0JwtAuthMiddleware(authCache)
+	authMiddleware := auth.NewAuthMiddleware(authConfig, authCache)
 
 	// set up CORS for requests
 	r.Use(cors.New(cors.Config{
