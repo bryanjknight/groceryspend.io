@@ -36,6 +36,13 @@ func handleSubmitReceipt(repo ReceiptRepository) gin.HandlerFunc {
 			return
 		}
 
+		// TODO: Cleaner way for getting a user ID that's not auth0 specific
+		//			 Perhaps a HTTPRequest -> User object?
+		//			 Another option is to have a user collection in mongo, and we store
+		//				 * the iss and sub for auth0
+		//				 * username if it's just a simple db
+		println(auth.GetUserIdFromJwt(*c.Request))
+
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}
 		receiptRequest.RawHtml = req.Data

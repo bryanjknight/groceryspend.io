@@ -157,6 +157,11 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
-func GetUserIdFromSession(r http.Request) string {
-	return r.URL.User.String()
+func GetUserIdFromJwt(r http.Request) string {
+	u := r.Context().Value("user")
+	user := u.(*jwt.Token)
+	iss := user.Claims.(jwt.MapClaims)["iss"].(string)
+	sub := user.Claims.(jwt.MapClaims)["sub"].(string)
+
+	return iss + "|" + sub
 }
