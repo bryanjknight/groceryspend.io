@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// InstacartTipTaxesFees container of non-item charges
 type InstacartTipTaxesFees struct {
 	SalesTax    float32
 	Tip         float32
@@ -176,7 +177,8 @@ func parseTaxTipFees(sectionDiv *html.Node) (InstacartTipTaxesFees, error) {
 	return retval, nil
 }
 
-func ParseInstacartHtmlReceipt(doc *html.Node) (ParsedReceipt, error) {
+// ParseInstacartHTMLReceipt parse an instacart HTML receipt
+func ParseInstacartHTMLReceipt(doc *html.Node) (ParsedReceipt, error) {
 	// find the "main" tag
 	mainNodes := GetElementsByTagName(doc, "main")
 	if len(mainNodes) != 1 {

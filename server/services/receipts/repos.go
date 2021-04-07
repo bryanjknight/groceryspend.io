@@ -9,15 +9,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
 	AddReceipt(receipt ParsedReceipt) (string, error)
 	AddReceiptRequest(request UnparsedReceiptRequest) (string, error)
 }
 
+// MongoReceiptRepository is a MongoDB backed repository
 type MongoReceiptRepository struct {
 	Client *mongo.Client
 }
 
+// NewMongoReceiptRepository create a new MongoReceiptRepository
 func NewMongoReceiptRepository() *MongoReceiptRepository {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -42,6 +45,7 @@ func NewMongoReceiptRepository() *MongoReceiptRepository {
 	return &retval
 }
 
+// AddReceipt add a receipt to the store
 func (r *MongoReceiptRepository) AddReceipt(receipt ParsedReceipt) (string, error) {
 	collection := r.Client.Database("receipts").Collection("parsed")
 
@@ -55,11 +59,12 @@ func (r *MongoReceiptRepository) AddReceipt(receipt ParsedReceipt) (string, erro
 
 	// TODO: should we use vendor independent IDs (e.g. UUID) so that we could move
 	//			 from one service to another?
-	objectId := res.InsertedID.(primitive.ObjectID).String()
-	return objectId, nil
+	objectID := res.InsertedID.(primitive.ObjectID).String()
+	return objectID, nil
 
 }
 
+// AddReceiptRequest add a receipt request to the store
 func (r *MongoReceiptRepository) AddReceiptRequest(receipt UnparsedReceiptRequest) (string, error) {
 	collection := r.Client.Database("receipts").Collection("requests")
 
@@ -73,6 +78,6 @@ func (r *MongoReceiptRepository) AddReceiptRequest(receipt UnparsedReceiptReques
 
 	// TODO: should we use vendor independent IDs (e.g. UUID) so that we could move
 	//			 from one service to another?
-	objectId := res.InsertedID.(primitive.ObjectID).String()
-	return objectId, nil
+	objectID := res.InsertedID.(primitive.ObjectID).String()
+	return objectID, nil
 }

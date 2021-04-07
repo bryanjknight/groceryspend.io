@@ -7,18 +7,21 @@ import (
 	"github.com/kofalt/go-memoize"
 )
 
-type AuthMiddleware interface {
+// Middleware middleware to verify session and access
+type Middleware interface {
 	VerifySession() gin.HandlerFunc
-	UserIdFromRequest(r *http.Request) string
+	UserIDFromRequest(r *http.Request) string
 }
 
 // DenyAllMiddleware denies all traffic
 type DenyAllMiddleware struct{}
 
+// NewDenyAllMiddleware deny all traffic, good(?) for prod in the event of a misconfiguration
 func NewDenyAllMiddleware() *DenyAllMiddleware {
 	return &DenyAllMiddleware{}
 }
 
+// VerifySession verify the session is valid
 func (d *DenyAllMiddleware) VerifySession() gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		c.Abort()
@@ -28,7 +31,8 @@ func (d *DenyAllMiddleware) VerifySession() gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
-func (d *DenyAllMiddleware) UserIdFromRequest(r *http.Request) string {
+// UserIDFromRequest get user ID from request
+func (d *DenyAllMiddleware) UserIDFromRequest(r *http.Request) string {
 	return ""
 }
 
@@ -36,10 +40,12 @@ func (d *DenyAllMiddleware) UserIdFromRequest(r *http.Request) string {
 type PassthroughMiddleware struct {
 }
 
+// NewPassthroughAuthMiddleware create an auth middleware that allows all traffic, good for testing, bad for prod
 func NewPassthroughAuthMiddleware() *PassthroughMiddleware {
 	return &PassthroughMiddleware{}
 }
 
+// VerifySession verify the session is valid
 func (p *PassthroughMiddleware) VerifySession() gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 
@@ -47,11 +53,13 @@ func (p *PassthroughMiddleware) VerifySession() gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
-func (d *PassthroughMiddleware) UserIdFromRequest(r *http.Request) string {
+// UserIDFromRequest get user ID from request
+func (p *PassthroughMiddleware) UserIDFromRequest(r *http.Request) string {
 	return ""
 }
 
-func NewAuthMiddleware(config string, cache *memoize.Memoizer) AuthMiddleware {
+// NewAuthMiddleware create a new auth middleware for auth/authz
+func NewAuthMiddleware(config string, cache *memoize.Memoizer) Middleware {
 
 	switch config {
 	case "PASSTHROUGH":

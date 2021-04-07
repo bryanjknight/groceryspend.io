@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func ParseWfmHtmlRecipt(doc *html.Node) (ParsedReceipt, error) {
+// ParseWfmHTMLRecipt parse a Whole Foods receipt
+func ParseWfmHTMLRecipt(doc *html.Node) (ParsedReceipt, error) {
 	return ParsedReceipt{}, errors.New("not implemented")
 }

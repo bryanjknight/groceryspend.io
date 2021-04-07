@@ -30,12 +30,12 @@ func traverseByTagName(n *html.Node, name string) []*html.Node {
 	return retval
 }
 
-// GetNodesByTagName recurse through DOM to find nodes that match this tag name.
-// 										does not include self-closing tags
+// GetElementsByTagName recurse through DOM to find nodes that match this tag name. Does not include self-closing tags
 func GetElementsByTagName(node *html.Node, tagName string) []*html.Node {
 	return traverseByTagName(node, tagName)
 }
 
+// GetAttribute retrieve a node's attribute
 func GetAttribute(n *html.Node, key string) (string, bool) {
 	for _, attr := range n.Attr {
 		if attr.Key == key {
@@ -45,7 +45,7 @@ func GetAttribute(n *html.Node, key string) (string, bool) {
 	return "", false
 }
 
-func checkId(n *html.Node, id string) bool {
+func checkID(n *html.Node, id string) bool {
 	if n.Type == html.ElementNode {
 		s, ok := GetAttribute(n, "id")
 		if ok && s == id {
@@ -55,13 +55,13 @@ func checkId(n *html.Node, id string) bool {
 	return false
 }
 
-func traverseById(n *html.Node, id string) *html.Node {
-	if checkId(n, id) {
+func traverseByID(n *html.Node, id string) *html.Node {
+	if checkID(n, id) {
 		return n
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		result := traverseById(c, id)
+		result := traverseByID(c, id)
 		if result != nil {
 			return result
 		}
@@ -70,6 +70,7 @@ func traverseById(n *html.Node, id string) *html.Node {
 	return nil
 }
 
-func GetElementById(n *html.Node, id string) *html.Node {
-	return traverseById(n, id)
+// GetElementByID find element by it's HTML ID
+func GetElementByID(n *html.Node, id string) *html.Node {
+	return traverseByID(n, id)
 }

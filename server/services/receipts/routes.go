@@ -7,8 +7,8 @@ import (
 	"groceryspend.io/server/middleware"
 )
 
-// Routes defines all webhook routes
-func WebhookRoutes(route *gin.Engine, middleware *middleware.MiddlewareContext) {
+// WebhookRoutes defines all webhook routes
+func WebhookRoutes(route *gin.Engine, middleware *middleware.Context) {
 	router := route.Group("/receipts")
 
 	repo := NewMongoReceiptRepository()
@@ -17,12 +17,12 @@ func WebhookRoutes(route *gin.Engine, middleware *middleware.MiddlewareContext) 
 }
 
 type submitReceiptForParsing struct {
-	Url       string `json:"url"`
+	URL       string `json:"url"`
 	Timestamp string `json:"timestamp"`
 	Data      string `json:"data"`
 }
 
-func handleSubmitReceipt(repo ReceiptRepository, m *middleware.MiddlewareContext) gin.HandlerFunc {
+func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
 		var req submitReceiptForParsing
@@ -40,16 +40,16 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.MiddlewareContext
 		//			 Another option is to have a user collection in mongo, and we store
 		//				 * the iss and sub for auth0
 		//				 * username if it's just a simple db
-		userId := m.UserIdFromRequest(c.Request)
-		m.Info("User ID: '%v'", userId)
+		userID := m.UserIDFromRequest(c.Request)
+		m.Info("User ID: '%v'", userID)
 
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}
-		receiptRequest.RawHtml = req.Data
+		receiptRequest.RawHTML = req.Data
 		receiptRequest.IsoTimestamp = req.Timestamp
-		receiptRequest.OriginalUrl = req.Url
+		receiptRequest.OriginalURL = req.URL
 
-		requestId, err := repo.AddReceiptRequest(receiptRequest)
+		requestID, err := repo.AddReceiptRequest(receiptRequest)
 		if err != nil {
 			m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -58,7 +58,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.MiddlewareContext
 			return
 		}
 
-		m.Info("Object ID of request: %v", requestId)
+		m.Info("Object ID of request: %v", requestID)
 
 		receipt, err := ParseReceipt(receiptRequest)
 		if err != nil {

@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-const testHtmlContent = `
+const testHTMLContent = `
 <html>
 <body>
 <div id="1">
@@ -20,7 +20,7 @@ const testHtmlContent = `
 </html>`
 
 func TestElementById(t *testing.T) {
-	testHtml, err := html.Parse(strings.NewReader(testHtmlContent))
+	testHTML, err := html.Parse(strings.NewReader(testHTMLContent))
 	if err != nil {
 		panic("Failed to parse html")
 	}
@@ -36,7 +36,7 @@ func TestElementById(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := GetElementById(testHtml, tc.input)
+		got := GetElementByID(testHTML, tc.input)
 		if got == nil || (got != nil && got.Data != tc.outputTagName) {
 			t.Errorf("expected: %v, got: %v", tc.outputTagName, got)
 		}
@@ -44,7 +44,7 @@ func TestElementById(t *testing.T) {
 }
 
 func TestElementByIdFailConditions(t *testing.T) {
-	testHtml, err := html.Parse(strings.NewReader(testHtmlContent))
+	testHTML, err := html.Parse(strings.NewReader(testHTMLContent))
 	if err != nil {
 		panic("Failed to parse html")
 	}
@@ -59,14 +59,14 @@ func TestElementByIdFailConditions(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := GetElementById(testHtml, tc.input)
+		got := GetElementByID(testHTML, tc.input)
 		if got != nil {
 			t.Errorf("expected nil, got: %v", got)
 		}
 	}
 }
 func TestElementByTagName(t *testing.T) {
-	testHtml, err := html.Parse(strings.NewReader(testHtmlContent))
+	testHTML, err := html.Parse(strings.NewReader(testHTMLContent))
 	if err != nil {
 		panic("Failed to parse html")
 	}
@@ -83,7 +83,7 @@ func TestElementByTagName(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := GetElementsByTagName(testHtml, tc.input)
+		got := GetElementsByTagName(testHTML, tc.input)
 
 		// get id attribute
 		gotIds := []string{}

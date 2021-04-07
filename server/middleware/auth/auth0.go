@@ -12,15 +12,15 @@ import (
 	"github.com/kofalt/go-memoize"
 )
 
-type Response struct {
+type response struct {
 	Message string `json:"message"`
 }
 
-type Jwks struct {
-	Keys []JSONWebKeys `json:"keys"`
+type jwks struct {
+	Keys []jsonWebKeys `json:"keys"`
 }
 
-type JSONWebKeys struct {
+type jsonWebKeys struct {
 	Kty string   `json:"kty"`
 	Kid string   `json:"kid"`
 	Use string   `json:"use"`
@@ -29,15 +29,15 @@ type JSONWebKeys struct {
 	X5c []string `json:"x5c"`
 }
 
-func getJwks(url string) (Jwks, error) {
+func getJwks(url string) (jwks, error) {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		return Jwks{}, err
+		return jwks{}, err
 	}
 	defer resp.Body.Close()
 
-	var jwks = Jwks{}
+	var jwks = jwks{}
 	err = json.NewDecoder(resp.Body).Decode(&jwks)
 
 	if err != nil {
@@ -55,7 +55,7 @@ func getPemCert(token *jwt.Token, cache *memoize.Memoizer) (string, error) {
 		return getJwks(url)
 	}
 
-	jwks, err, cached := cache.Memoize(url, getJwksClosure)
+	j, err, cached := cache.Memoize(url, getJwksClosure)
 	if err != nil {
 		return cert, err
 	}
@@ -64,9 +64,9 @@ func getPemCert(token *jwt.Token, cache *memoize.Memoizer) (string, error) {
 		println("Pulling JWKS from cache")
 	}
 
-	for k := range jwks.(Jwks).Keys {
-		if token.Header["kid"] == jwks.(Jwks).Keys[k].Kid {
-			cert = "-----BEGIN CERTIFICATE-----\n" + jwks.(Jwks).Keys[k].X5c[0] + "\n-----END CERTIFICATE-----"
+	for k := range j.(jwks).Keys {
+		if token.Header["kid"] == j.(jwks).Keys[k].Kid {
+			cert = "-----BEGIN CERTIFICATE-----\n" + j.(jwks).Keys[k].X5c[0] + "\n-----END CERTIFICATE-----"
 		}
 	}
 
@@ -83,6 +83,7 @@ type Auth0JwtAuthMiddleware struct {
 	middleware *jwtmiddleware.JWTMiddleware
 }
 
+// NewAuth0JwtAuthMiddleware create a auth middleware leveraging Auth0
 func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer) *Auth0JwtAuthMiddleware {
 
 	// TODO: initialize cache wtih JWKS so that we don't have to wait for the cache
@@ -121,6 +122,7 @@ func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer) *Auth0JwtAuthMiddleware 
 	}
 }
 
+// VerifySession check the JWT to ensure it's valid still
 func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		err := m.middleware.CheckJWT(c.Writer, c.Request)
@@ -138,7 +140,8 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
-func (d *Auth0JwtAuthMiddleware) UserIdFromRequest(r *http.Request) string {
+// UserIDFromRequest fetch the user ID from the JWT
+func (m *Auth0JwtAuthMiddleware) UserIDFromRequest(r *http.Request) string {
 	u := r.Context().Value("user")
 	user := u.(*jwt.Token)
 	iss := user.Claims.(jwt.MapClaims)["iss"].(string)

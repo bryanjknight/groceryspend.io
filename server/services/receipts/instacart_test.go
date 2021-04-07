@@ -47,12 +47,12 @@ func TestInstacartReceipt(t *testing.T) {
 		fileContent := readFileAsString(filepath.Join(testDataDir, "instacart", fmt.Sprintf("%s.txt", orderNumber)))
 		fileContentReader := strings.NewReader(fileContent)
 
-		parsedHtml, err := html.Parse(fileContentReader)
+		parsedHTML, err := html.Parse(fileContentReader)
 		if err != nil {
 			t.Errorf("Failed to parse html data: %s", err)
 		}
 
-		receipt, err := ParseInstacartHtmlReceipt(parsedHtml)
+		receipt, err := ParseInstacartHTMLReceipt(parsedHTML)
 		if err != nil {
 			t.Errorf("Failed to parse receipt: %s", err)
 		}

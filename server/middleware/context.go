@@ -8,20 +8,24 @@ import (
 	"groceryspend.io/server/middleware/o11y"
 )
 
-// MiddlewareContext contains all middleware features (auth, observability, etc)
-type MiddlewareContext struct {
-	auth.AuthMiddleware
-	o11y.ObservabilityMiddleware
+type authMiddleware = auth.Middleware
+type obsMiddleware = o11y.Middleware
+
+// Context contains all middleware features (auth, observability, etc)
+type Context struct {
+	authMiddleware
+	obsMiddleware
 }
 
-func NewMiddlewareContext(authConfig string) *MiddlewareContext {
+// NewMiddlewareContext create a new middleware context
+func NewMiddlewareContext(authConfig string) *Context {
 
 	authCache := memoize.NewMemoizer(90*time.Second, 10*time.Minute)
 	authMiddleware := auth.NewAuthMiddleware(authConfig, authCache)
 
-	obsMiddleware := o11y.NewObserverabilityMiddleware()
+	obsMiddleware := o11y.NewMiddleware()
 
-	return &MiddlewareContext{
+	return &Context{
 		authMiddleware,
 		obsMiddleware,
 	}

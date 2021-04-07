@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// ParseStringToUSDAmount parse a string value into a float32 assuming the value is something like $123.45
 func ParseStringToUSDAmount(s string) (float32, error) {
 	// strip the $ out, convert to a float32
 	sNoDollarSign := strings.ReplaceAll(s, "$", "")
@@ -17,17 +18,20 @@ func ParseStringToUSDAmount(s string) (float32, error) {
 	return float32(val), nil
 }
 
+// UnparsedReceiptRequest a request to parse a receipt
 type UnparsedReceiptRequest struct {
-	OriginalUrl  string
+	OriginalURL  string
 	IsoTimestamp string
-	RawHtml      string
+	RawHTML      string
 }
 
+// ParsedContainerSize the size of an item's container (e.g. a 16oz container of strawberries)
 type ParsedContainerSize struct {
 	Size float32
 	Unit string // would prefer type-safe units, but we cannot guarnatee they'll be accurate
 }
 
+// ParsedItem a parsed line item from a receipt
 type ParsedItem struct {
 	UnitCost      float32
 	Qty           int
@@ -41,8 +45,9 @@ func (p ParsedItem) String() string {
 	return fmt.Sprintf("%v: %v", p.Name, p.TotalCost)
 }
 
+// ParsedReceipt a fully parsed receipt
 type ParsedReceipt struct {
-	OriginalUrl string
+	OriginalURL string
 	OrderNumber string
 	ParsedItems []ParsedItem
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
