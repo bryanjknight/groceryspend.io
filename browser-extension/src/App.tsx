@@ -6,14 +6,30 @@ import {
   EXTRACT_DOM_ACTION,
   ExtractDomResponse,
 } from "./browser";
+import { useAuth0 } from "@auth0/auth0-react";
 
 const browser = getBrowserInstance();
-
 export interface AppProps {
   webhookUrl: string;
 }
 
 export const App = (props: AppProps) => {
+  const {
+    isLoading,
+    isAuthenticated,
+    error,
+    user,
+    loginWithPopup,
+    logout,
+  } = useAuth0();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (error) {
+    return <div>Oops... {error.message}</div>;
+  }
+
   const getAxios = (webhookUrl: string) => {
     return axios.create({
       baseURL: webhookUrl,
@@ -61,14 +77,24 @@ export const App = (props: AppProps) => {
     });
   };
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <Button
-          onClick={handleSendButtonClick}
-          text={"Send to GrocerySpend.io"}
-        />
-      </header>
-    </div>
-  );
+  if (isAuthenticated) {
+    return (
+      <div className="App">
+        <p>
+          Hello {user.name}{" "}
+          <button onClick={() => logout({ returnTo: window.location.origin })}>
+            Log out
+          </button>
+        </p>
+        <header className="App-header">
+          <Button
+            onClick={handleSendButtonClick}
+            text={"Send to GrocerySpend.io"}
+          />
+        </header>
+      </div>
+    );
+  }
+
+  return <button onClick={() => loginWithPopup()}>Log in</button>;
 };

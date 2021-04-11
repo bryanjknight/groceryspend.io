@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@auth0/auth0-react": "^1.4.0",
+    "@auth0/auth0-spa-js": "^1.14.0",
     "axios": "^0.21.1",
+    "lodash": "^4.17.21",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
   },
@@ -38,6 +41,7 @@
     "@types/axios": "^0.14.0",
     "@types/chrome": "0.0.133",
     "@types/jest": "^26.0.22",
+    "@types/lodash": "^4.14.168",
     "@types/node": "^12.20.7",
     "@types/react": "^17.0.3",
     "@types/react-dom": "^17.0.3",
@@ -75,9 +79,12 @@
   },
   "husky": {},
   "lint-staged": {
-    "*.{ts,tsx,css,md}": [
+    "*.{ts,tsx,css}": [
       "prettier --write",
       "eslint --fix"
+    ],
+    "*.md": [
+      "prettier --write"
     ]
   }
 }

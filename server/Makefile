@@ -9,4 +9,8 @@ build:
 unit-test:
 	go test ./...
 
+run:
+	docker-compose up -d
+	go run main.go
+
 all: lint build unit-test

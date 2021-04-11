@@ -11,5 +11,13 @@
       "js": ["content.js"]
     }
   ],
-  "permissions": ["activeTab", "http://localhost:8080/"]
+  "permissions": [
+    "activeTab",
+    "identity",
+    "notifications",
+    "storage",
+    "http://localhost:8080/",
+    "https://*.auth0.com/*"
+  ], 
+  "key": "gphmemfooelbfnnlnjegjofkkabhebek"
 }
