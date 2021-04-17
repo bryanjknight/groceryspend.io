@@ -1,6 +1,7 @@
-import { getBrowserInstance, notification } from "../browser";
+import { getBrowserInstance } from "../browser";
 import pkce from "pkce-challenge";
 import urlParse from "url-parse";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export const CODE_VERIFIER_KEY = "codeVerifier";
 
@@ -11,6 +12,7 @@ const redirectUri = browser.identity.getRedirectURL();
 // TODO: extract these from process.env
 const domain = "https://groceryspend-dev.us.auth0.com";
 const clientId = "tonoXWFW9VLF9FHkzNxiUULKtibDkTuf";
+const audience = "https://bknight.dev.groceryspend.io";
 const permissions = ["openid", "profile"];
 const scope = permissions.join("%20");
 
@@ -37,13 +39,12 @@ const handleAuthorizationCode = (
     throw new Error("Code is not set");
   }
 
-  const queryParams = new URLSearchParams({
+  const options = new URLSearchParams({
+    grant_type: "authorization_code",
     client_id: clientId,
-    scope: scope,
+    code_verifier: codeVerifier,
     code: code,
     redirect_uri: redirectUri,
-    grant_type: "authorization_code",
-    code_verifier: codeVerifier,
   });
 
   // step 4 - exchange auth code and code verifier for an access token
@@ -52,8 +53,7 @@ const handleAuthorizationCode = (
     headers: {
       "Content-type": "application/x-www-form-urlencoded",
     },
-    credentials: "omit",
-    body: queryParams.toString(),
+    body: options.toString(),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -71,12 +71,12 @@ const handleAuthorizationCode = (
       //   refresh_token_expired_at: timestamp() + refreshTokenLifetime,
       // });
       // createQuickAddMenu();
-      cb(JSON.stringify(data));
+      cb(data.access_token);
     });
 };
 
 const handleAccessToken = (accessToken: string) => {
-  notification(accessToken);
+  console.log(accessToken);
 };
 
 // flow inspired by https://github.com/ukhan/add-to-ms-todo and
@@ -102,9 +102,11 @@ export const backgroundAuth = async (tryUseCookie = false) => {
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
     prompt: !tryUseCookie ? "login" : "none",
+    audience: audience,
   };
   const queryParams = new URLSearchParams(queryParamsObj);
   const authURL = `${domain}/authorize?${queryParams.toString()}`;
+  console.log(authURL);
 
   // launchWebAuthFlow is the magic that tells the browser "hey, this weird redirect
   // is actually an extension, so send it to the callback function instead"

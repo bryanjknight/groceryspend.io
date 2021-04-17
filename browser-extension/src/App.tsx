@@ -23,22 +23,6 @@ export const App = (props: AppProps) => {
     return <div>Oops... {error.message}</div>;
   }
 
-  const handleLogIn = async (authUrlPromise: Promise<string>) => {
-    const authUrl = await authUrlPromise;
-
-    const cb = (redirectUrl: string | undefined) => {
-      alert("Redirect URL: " + redirectUrl);
-    };
-
-    return browser.identity.launchWebAuthFlow(
-      {
-        interactive: true,
-        url: authUrl,
-      },
-      cb
-    );
-  };
-
   const handleSendButtonClick = () => {
     const handleContentScriptResponse = (resp: ExtractDomResponse) => {
       alert(resp);
@@ -79,10 +63,10 @@ export const App = (props: AppProps) => {
           </button>
         </p>
         <header className="App-header">
-          {/* <Button
+          <Button
             onClick={handleSendButtonClick}
             text={"Send to GrocerySpend.io"}
-          /> */}
+          />
         </header>
       </div>
     );
