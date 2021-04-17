@@ -79,6 +79,8 @@ const handleAccessToken = (accessToken: string) => {
   notification(accessToken);
 };
 
+// flow inspired by https://github.com/ukhan/add-to-ms-todo and
+// https://www.oauth.com/playground/authorization-code-with-pkce.html
 export const backgroundAuth = async (tryUseCookie = false) => {
   // step 1 - create a secret code and a code challenge
   const { code_verifier: tmpState } = pkce(43);
@@ -106,6 +108,7 @@ export const backgroundAuth = async (tryUseCookie = false) => {
 
   // launchWebAuthFlow is the magic that tells the browser "hey, this weird redirect
   // is actually an extension, so send it to the callback function instead"
+  // see https://stackoverflow.com/a/35773982/704525
   browser.identity.launchWebAuthFlow(
     {
       url: authURL,
