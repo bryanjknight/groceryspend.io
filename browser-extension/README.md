@@ -37,6 +37,12 @@ Things to consider when testing:
 
 ### Chrome
 
+Options include:
+
+- Using the inspect popup widget (insert picture)
+- go to `chrome-extension://gpmoghmaibomfddfbofkionknjjeoaef/popup.html` to render the plugin popup
+- see https://developer.chrome.com/docs/extensions/mv3/tut_debugging/
+
 ### Firefox
 
 ### Safari (To be implemented)

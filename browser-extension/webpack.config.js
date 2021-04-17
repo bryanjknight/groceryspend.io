@@ -1,4 +1,5 @@
-const webpack = require("webpack");
+/* eslint-disable @typescript-eslint/no-var-requires */
+// const webpack = require("webpack");
 const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 
@@ -6,6 +7,7 @@ const config = {
   devtool: "source-map",
   entry: {
     popup: path.join(__dirname, "src/popup.tsx"),
+    background: path.join(__dirname, "src/background.ts"),
     content: path.join(__dirname, "src/content.ts"),
   },
   output: { path: path.join(__dirname, "dist"), filename: "[name].js" },
@@ -61,7 +63,12 @@ const config = {
     extensions: [".js", ".jsx", ".tsx", ".ts"],
     alias: {
       "react-dom": "@hot-loader/react-dom",
-    },    
+    },
+    fallback: {
+      crypto: require.resolve("crypto-browserify"),
+      buffer: require.resolve("buffer/"),
+      stream: require.resolve("stream-browserify"),
+    }
   },
   devServer: {
     contentBase: "./dist",

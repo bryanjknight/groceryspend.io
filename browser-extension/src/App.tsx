@@ -1,12 +1,12 @@
 import "./App.css";
 import { Button } from "./components/Button";
-import axios from "axios";
 import {
   getBrowserInstance,
   EXTRACT_DOM_ACTION,
   ExtractDomResponse,
 } from "./browser";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useApi, UseApiOptions } from "./api";
 
 const browser = getBrowserInstance();
 export interface AppProps {
@@ -14,14 +14,7 @@ export interface AppProps {
 }
 
 export const App = (props: AppProps) => {
-  const {
-    isLoading,
-    isAuthenticated,
-    error,
-    user,
-    loginWithPopup,
-    logout,
-  } = useAuth0();
+  const { error, isAuthenticated, isLoading, user, logout } = useAuth0();
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -30,34 +23,27 @@ export const App = (props: AppProps) => {
     return <div>Oops... {error.message}</div>;
   }
 
-  const getAxios = (webhookUrl: string) => {
-    return axios.create({
-      baseURL: webhookUrl,
-      // TODO: http proxy?
-    });
-  };
+  const handleLogIn = async (authUrlPromise: Promise<string>) => {
+    const authUrl = await authUrlPromise;
 
-  const handleContentScriptResponse = (
-    extractDomRequest: ExtractDomResponse
-  ) => {
-    const payload = {
-      url: extractDomRequest.url,
-      timestamp: new Date().toISOString(),
-      data: `<html><body>${extractDomRequest.dom}</body></html>`,
+    const cb = (redirectUrl: string | undefined) => {
+      alert("Redirect URL: " + redirectUrl);
     };
-    const httpClient = getAxios(props.webhookUrl);
 
-    httpClient
-      .post("/", payload)
-      .then((resp) => {
-        alert("Success");
-      })
-      .catch((err) => {
-        alert(`Failure: ${err}`);
-      });
+    return browser.identity.launchWebAuthFlow(
+      {
+        interactive: true,
+        url: authUrl,
+      },
+      cb
+    );
   };
 
   const handleSendButtonClick = () => {
+    const handleContentScriptResponse = (resp: ExtractDomResponse) => {
+      alert(resp);
+    };
+
     // send a message to the content script to extract the dom
     browser.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs.length !== 1) {
@@ -77,6 +63,12 @@ export const App = (props: AppProps) => {
     });
   };
 
+  const handleLogInClick = () => {
+    browser.runtime.sendMessage({ action: "AUTH" }, (response) => {
+      console.log(response);
+    });
+  };
+
   if (isAuthenticated) {
     return (
       <div className="App">
@@ -87,14 +79,13 @@ export const App = (props: AppProps) => {
           </button>
         </p>
         <header className="App-header">
-          <Button
+          {/* <Button
             onClick={handleSendButtonClick}
             text={"Send to GrocerySpend.io"}
-          />
+          /> */}
         </header>
       </div>
     );
   }
-
-  return <button onClick={() => loginWithPopup()}>Log in</button>;
+  return <button onClick={() => handleLogInClick()}>Log In</button>;
 };
