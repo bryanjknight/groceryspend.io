@@ -28,11 +28,12 @@ const decryptAES256 = (browser: typeof chrome, cipher: string) => (
     browser.storage.local.get([key], (items) => {
       if (!(key in items)) {
         resolve(null);
+      } else {
+        const cipherText = items[key];
+        resolve(
+          CryptoJS.AES.decrypt(cipherText, cipher).toString(CryptoJS.enc.Utf8)
+        );
       }
-      const cipherText = items[key];
-      resolve(
-        CryptoJS.AES.decrypt(cipherText, cipher).toString(CryptoJS.enc.Utf8)
-      );
     });
   });
 };

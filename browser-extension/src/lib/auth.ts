@@ -1,7 +1,6 @@
-import { getBrowserInstance } from "../browser";
+import { getBrowserInstance } from "./browser";
 import pkce from "pkce-challenge";
 import urlParse from "url-parse";
-import { useAuth0 } from "@auth0/auth0-react";
 
 export const CODE_VERIFIER_KEY = "codeVerifier";
 
@@ -14,6 +13,7 @@ const domain = "https://groceryspend-dev.us.auth0.com";
 const clientId = "tonoXWFW9VLF9FHkzNxiUULKtibDkTuf";
 const audience = "https://bknight.dev.groceryspend.io";
 const permissions = ["openid", "profile"];
+
 const scope = permissions.join("%20");
 
 const handleAuthorizationCode = (
@@ -64,24 +64,13 @@ const handleAuthorizationCode = (
       }
     })
     .then((data) => {
-      // encStorage.set({
-      //   access_token: data.access_token,
-      //   refresh_token: data.refresh_token,
-      //   expired_at: timestamp() + data.expires_in,
-      //   refresh_token_expired_at: timestamp() + refreshTokenLifetime,
-      // });
-      // createQuickAddMenu();
       cb(data.access_token);
     });
 };
 
-const handleAccessToken = (accessToken: string) => {
-  console.log(accessToken);
-};
-
 // flow inspired by https://github.com/ukhan/add-to-ms-todo and
 // https://www.oauth.com/playground/authorization-code-with-pkce.html
-export const backgroundAuth = async (tryUseCookie = false) => {
+export const login = async (setToken: (token: string) => void) => {
   // step 1 - create a secret code and a code challenge
   const { code_verifier: tmpState } = pkce(43);
   const { code_verifier: codeVerifier, code_challenge: codeChallenge } = pkce(
@@ -101,7 +90,7 @@ export const backgroundAuth = async (tryUseCookie = false) => {
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
-    prompt: !tryUseCookie ? "login" : "none",
+    prompt: "login",
     audience: audience,
   };
   const queryParams = new URLSearchParams(queryParamsObj);
@@ -117,6 +106,34 @@ export const backgroundAuth = async (tryUseCookie = false) => {
       interactive: true,
     },
     // step 3 - after the user is redirected back, verify the state
-    handleAuthorizationCode(codeVerifier, state, handleAccessToken)
+    handleAuthorizationCode(codeVerifier, state, setToken)
   );
+};
+
+export const verifyToken = (token: string | null): boolean => {
+  if (!token) return false;
+
+  // TODO: implement token verification
+  return true;
+};
+
+export interface UserInfo {
+  name: string;
+}
+
+export const getUserProfile = async (token: string): Promise<UserInfo> => {
+  return new Promise((resolve) => {
+    return {
+      name: "TBD",
+    };
+  });
+};
+
+export const logout = (token: string) => {
+  // build out logout URL
+
+  // fetch
+
+  // run callback (or make this a promise)
+  throw new Error("Do something");
 };

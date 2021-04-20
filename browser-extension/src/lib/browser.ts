@@ -41,3 +41,11 @@ export const notification = (message: string | undefined): Promise<string> =>
       (notificationId) => resolve(notificationId)
     )
   );
+
+export const fireMessage = async <T, U>(message: T): Promise<U> => {
+  return new Promise<U>((resolve) =>
+    getBrowserInstance().runtime.sendMessage(message, (response: U) =>
+      resolve(response)
+    )
+  );
+};

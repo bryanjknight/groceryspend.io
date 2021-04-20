@@ -1,4 +1,4 @@
-import { getBrowserInstance, EXTRACT_DOM_ACTION } from "./browser";
+import { getBrowserInstance, EXTRACT_DOM_ACTION } from "./lib/browser";
 
 const browser = getBrowserInstance();
 
