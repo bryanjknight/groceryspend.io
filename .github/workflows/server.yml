@@ -1,0 +1,19 @@
+name: Server CICD
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      
+      - name:
+        run: go build -v ./... -o server-bin
+
+      - name:
+        run: go test --cover -v ./...
+  
