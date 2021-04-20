@@ -11,11 +11,11 @@ jobs:
         with:
           go-version: 1.16
       
-      - name:
+      - name: Build server
         working-directory: server
-        run: go build -v ./...
+        run: make build
 
-      - name:
+      - name: Run unit tests
         working-directory: server
-        run: go test --cover -v ./...
+        run: make unit-test
   

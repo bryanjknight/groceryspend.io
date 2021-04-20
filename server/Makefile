@@ -4,10 +4,10 @@ lint:
 
 build:
 	# potentially use this for building a docker image
-	go build -o server
+	go build -v ./...
 
 unit-test:
-	go test ./...
+	go test --cover -v ./...
 
 run:
 	docker-compose up -d
