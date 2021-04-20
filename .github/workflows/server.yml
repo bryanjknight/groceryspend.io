@@ -13,7 +13,7 @@ jobs:
       
       - name:
         working-directory: server
-        run: go build -v ./... -o server-bin
+        run: go build -v ./...
 
       - name:
         working-directory: server
