@@ -16,7 +16,6 @@ func main() {
 
 	// load config from env by default, use NO_LOAD_ENV_FILE to use supplied env
 	if _, noLoadEnvFile := os.LookupEnv("NO_LOAD_ENV_FILE"); !noLoadEnvFile {
-		println(utils.GetOsValue("NO_LOAD_ENV_FILE"))
 		if err := utils.LoadFromDefaultEnvFile(); err != nil {
 			panic("Unable to load .env file")
 		}

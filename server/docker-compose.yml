@@ -18,22 +18,19 @@ services:
     ports:
       - 18081:8081
 
-  #
-  # Not actively using postgresql, but leaving for ease
-  #
-  # postgres:
-  #   image: postgres
-  #   restart: always
-  #   environment: 
-  #     POSTGRES_PASSWORD: example
-  #   ports:
-  #     - 5432:5432
+  postgres:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_PASSWORD: example
+    ports:
+      - 5432:5432
   
-  # adminer:
-  #   image: adminer
-  #   restart: always
-  #   ports:
-  #     - 18080:8080
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 18080:8080
 
   #
   # Not actively using redis, but leaving for ease
