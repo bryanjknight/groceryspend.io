@@ -33,7 +33,11 @@ export const App = (props: AppProps): JSX.Element => {
     const handleContentScriptResponse = (resp: ExtractDomResponse) => {
       fireMessage<BackgroundMessageRequest, string>({
         action: "SEND",
-        data: resp,
+        data: {
+          url: resp.url,
+          timestamp: new Date().toISOString(),
+          data: resp.dom,
+        },
       }).then((resp) => {
         alert(resp);
       });

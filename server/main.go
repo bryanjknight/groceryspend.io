@@ -22,12 +22,13 @@ func main() {
 	// set up CORS for requests
 	r.Use(cors.New(cors.Config{
 		// TODO: external config for allowed origins
-		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET,PUT,POST,DELETE,PATCH,OPTIONS"},
-		AllowHeaders:     []string{"Origin, X-Requested-With, Content-Type, Accept, Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+		AllowOrigins:           []string{"http://localhost:3000", "chrome-extension://gpmoghmaibomfddfbofkionknjjeoaef"},
+		AllowMethods:           []string{"GET,PUT,POST,DELETE,PATCH,OPTIONS"},
+		AllowHeaders:           []string{"*, Authorization"},
+		ExposeHeaders:          []string{"*"},
+		AllowCredentials:       true,
+		AllowBrowserExtensions: true,
+		MaxAge:                 12 * time.Hour,
 	}))
 
 	receipts.WebhookRoutes(r, middlewareContext)
