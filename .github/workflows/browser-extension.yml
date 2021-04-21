@@ -1,4 +1,4 @@
-name: Server CICD
+name: Browser Extension CICD
 on: 
   push:
     paths:
