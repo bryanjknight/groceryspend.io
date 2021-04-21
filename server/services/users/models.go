@@ -9,8 +9,8 @@ import (
 // User represents the canonical user
 type User struct {
 	UserUUID       string `gorm:"primaryKey"`
-	AuthProviderID string `gorm:"notNull"`
-	AuthSpecificID string `gorm:"notNull"`
+	AuthProviderID string `gorm:"notNull;index:auth_provider_idx"`
+	AuthSpecificID string `gorm:"notNull;index:auth_provider_idx"`
 }
 
 // BeforeCreate before creating model, set the UserUUID to a generated UUID
