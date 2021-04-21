@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"groceryspend.io/server/utils"
 )
 
 // ReceiptRepository contains the common storage/access patterns for receipts
@@ -25,8 +26,7 @@ func NewMongoReceiptRepository() *MongoReceiptRepository {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// TODO: better way of auth into mongodb
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://root:example@localhost:27017/?connect=direct"))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(utils.GetOsValue("RECEIPTS_MONGODB_URI")))
 	if err != nil {
 		panic("failed to connect to mongodb")
 	}

@@ -1,34 +1,37 @@
 package main
 
 import (
-	"time"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"groceryspend.io/server/middleware"
 	"groceryspend.io/server/services/receipts"
 	"groceryspend.io/server/services/users"
+	"groceryspend.io/server/utils"
 )
 
 func main() {
 
+	// load config from env
+	if err := utils.LoadFromDefaultEnvFile(); err != nil {
+		panic("Unable to load .env file")
+	}
+
 	r := gin.Default()
 
 	// set up auth management
-	authConfig := "AUTH0"
+	authConfig := utils.GetOsValue("AUTH_PROVIDER")
 	middlewareContext := middleware.NewMiddlewareContext(authConfig)
 
 	// set up CORS for requests
 	r.Use(cors.New(cors.Config{
-		// TODO: external config for allowed origins
-		AllowOrigins:           []string{"http://localhost:3000", "chrome-extension://gpmoghmaibomfddfbofkionknjjeoaef"},
-		AllowMethods:           []string{"GET,PUT,POST,DELETE,PATCH,OPTIONS"},
-		AllowHeaders:           []string{"*, Authorization"},
-		ExposeHeaders:          []string{"*"},
-		AllowCredentials:       true,
-		AllowBrowserExtensions: true,
-		MaxAge:                 12 * time.Hour,
+		AllowOrigins:           utils.GetOsValueAsArray("AUTH_ALLOW_ORIGINS"),
+		AllowMethods:           utils.GetOsValueAsArray("AUTH_ALLOW_METHODS"),
+		AllowHeaders:           utils.GetOsValueAsArray("AUTH_ALLOW_HEADERS"),
+		ExposeHeaders:          utils.GetOsValueAsArray("AUTH_EXPOSE_HEADERS"),
+		AllowCredentials:       utils.GetOsValueAsBoolean("AUTH_ALLOW_CREDENTIALS"),
+		AllowBrowserExtensions: utils.GetOsValueAsBoolean("AUTH_ALLOW_BROWSER_EXTENSIONS"),
+		MaxAge:                 utils.GetOsValueAsDuration("AUTH_MAX_AGE"),
 	}))
 
 	receipts.WebhookRoutes(r, middlewareContext)
