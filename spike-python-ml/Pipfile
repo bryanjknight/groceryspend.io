@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+scikit-learn = "*"
+numpy = "*"
+scipy = "*"
+pandas = "*"
+lxml = "*"
+pdfplumber = "*"
+tika = "*"
+mypy = "*"
+pytest = "*"
+flake8 = "*"
+flake8-mypy = "*"
+black = "*"
+
+[scripts]
+test = "python -m pytest -s"
+extract_pdf_txt = "python extract_pdf_txt.py"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

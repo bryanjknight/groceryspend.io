@@ -1,0 +1,5 @@
+.pytest_cache
+.venv/
+.vscode/.ropeproject
+.vscode/settings.json
+*.pyc
