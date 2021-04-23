@@ -125,6 +125,16 @@ def test_parse_works():
             ["a","b", "c"],
             "No op scenario"
         ],
+        [
+            ["Potat","b", "Potat", "c"],
+            ["Potato b", "Potato c"],
+            "alternating"
+        ],
+        [
+            ["Potat","b", "Potat", "c", "Potat"],
+            ["Potato b", "Potato c", "Potato"],
+            "alternating with one at the end"
+        ],
     ]
 )
 def test_apply_item_fix(input, output, name):

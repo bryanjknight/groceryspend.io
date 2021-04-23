@@ -64,19 +64,35 @@ ITEM_HACKS = tuple([
 
 def apply_item_fix(tokens: List[str]):
     retval = []
-
-    idx = 0
-    while idx < len(tokens):
+    tmp = []
+    fixed_idxs = set([])
+    # first fix all the tokens, note the positions that were fixed
+    for idx, token in enumerate(tokens):
         token = tokens[idx]
 
-        if token.endswith(ITEM_HACKS) and idx < len(tokens) - 1:
-            retval.append(f"{token}o {tokens[idx+1]}")
-            idx += 1
+        fixed = token
+        if token.endswith(ITEM_HACKS):
+            fixed = f"{token}o"
+            fixed_idxs.add(idx)
+
+        tmp.append(fixed)
+    
+    # then join any fixed ones together
+    idx = 0
+    while idx < len(tmp):
+
+        if idx in fixed_idxs and idx < len(tmp) - 1:
+
+            # iterate until you find the next idx without a fix
+            idx2 = idx + 1
+            while (idx2 in fixed_idxs):
+                idx2 += 1
+            retval.append(" ".join(tmp[idx:idx2+1]))
+            idx += (idx2 - idx) + 1
         else:
-            retval.append(token)
-
-        idx += 1
-
+            retval.append(tmp[idx])
+            idx += 1
+        
     return retval
 
 
