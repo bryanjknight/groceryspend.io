@@ -11,9 +11,9 @@ docker build -t $IMAGE_NAME .
 mkdir -p $PWD/output/categorize/training
 
 PYTHON_ARGS=(
-  "/src/parse_pdf/extract_pdf_text.py"
-  "/data/parse_pdf/hyad/2018-Store-Brand-Catalog.pdf"
-  "/output/categorize/training/2018-Store-Brand-Catalog.csv"
+  "/src/training/categorize/extract_pdf_text.py"
+  "/data/training/categorize/hyad/2018-Store-Brand-Catalog.pdf"
+  "/output/categorize/training/hyad.csv"
 )
 
 # run the local image with the following mounts
@@ -21,7 +21,7 @@ PYTHON_ARGS=(
 # - output to output the file
 docker run -it \
   -v "$(pwd)/data:/data:ro" \
-  -v "$PWD/parse_pdf:/src/parse_pdf:ro" \
+  -v "$PWD/training:/src/training:ro" \
   -v "$PWD/output:/output:rw" \
   -e "PYTHONPATH=/src" \
   $IMAGE_NAME \

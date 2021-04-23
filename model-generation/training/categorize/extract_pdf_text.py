@@ -1,7 +1,7 @@
 import pdfplumber
 import sys
-import parse_pdf.hayd.parser as hayd_parser
-import parse_pdf.export as parse_csv
+import training.categorize.hayd.parser as hayd_parser
+import training.categorize.export as export_csv
 
 if __name__ == "__main__":
 
@@ -42,6 +42,6 @@ if __name__ == "__main__":
 
     context._finalize_current_item()
     # now write to the output file
-    parse_csv.write_table_as_csv(
-        parse_csv.convert_to_table(context.get_parsed_catalog()), sys.argv[2]
+    export_csv.write_table_as_csv(
+        export_csv.convert_to_table(context.get_parsed_catalog()), sys.argv[2]
     )
