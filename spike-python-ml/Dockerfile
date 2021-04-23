@@ -10,4 +10,5 @@ RUN sed -i "s/rights=\"none\" pattern=\"PDF\"/rights=\"read\" pattern=\"PDF\"/g"
 
 RUN pip install \
   pdfplumber \
-  pandas
+  pandas \
+  regex

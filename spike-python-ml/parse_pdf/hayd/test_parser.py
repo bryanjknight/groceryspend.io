@@ -1,4 +1,5 @@
-import parse_pdf.hayd.context as context
+import parse_pdf.hayd.parser as parser
+import pytest
 
 TEST_DATA = """Product Selection 
 Bakery 
@@ -47,7 +48,7 @@ o  *New* - Betty Crocker Cake Mix Spice,
 
 
 def test_parse_works():
-    pc = context.ParseContext()
+    pc = parser.Parser()
 
     lines = TEST_DATA.split("\n")
     for line in lines:
@@ -95,3 +96,32 @@ def test_parse_works():
     }
 
     assert parsed_data == expected_parsed_data
+
+@pytest.mark.parametrize(
+    ["input", "output", "name"],
+    [
+        [
+            ["Nabisc", "Chips Ahoy! Chewy Cookies,"],
+            ["Nabisco Chips Ahoy! Chewy Cookies,"],
+            "Nabisco"
+        ],
+        [
+            ["Arg", "Double Acting Aluminium Free"],
+            ["Argo Double Acting Aluminium Free"],
+            "Argo"
+        ],
+        [
+            ["Ortega Jalapen", "Pepper Diced, 4 oz"],
+            ["Ortega Jalapeno Pepper Diced, 4 oz"],
+            "Jalapenos"
+        ],
+        [
+            ["a","b", "c"],
+            ["a","b", "c"],
+            "No op scenario"
+        ],
+    ]
+)
+def test_apply_item_fix(input, output, name):
+    actual = parser.apply_item_fix(input)
+    assert actual == output, name
