@@ -2,4 +2,5 @@
 .venv/
 .vscode/.ropeproject
 .vscode/settings.json
+output/
 *.pyc

@@ -7,16 +7,17 @@ KNOWN_SKIP_LINES = set(
         "Product Selection",
         # the next are the second lines of long sub categories,
         # we'll use hacks to address this
-        "Butterscotch & Coconut)" "Spread",
+        "Butterscotch & Coconut)",
+        "Spread",
     ]
 )
 
 
-def handle_no_space_before_sub_cat(phrase, breakIdx):
+def handle_no_space_before_sub_cat(phrase, break_idx):
     def _func(line):
-        phraseIdx = line.find(phrase)
-        left = line[: phraseIdx + breakIdx]
-        right = line[phraseIdx + breakIdx :]
+        phrase_idx = line.find(phrase)
+        left = line[: phrase_idx + break_idx]
+        right = line[phrase_idx + break_idx :]
         return (left, right)
 
     return _func
@@ -44,23 +45,21 @@ NEW_SUB_CATEGORY_HACKS = [
 ]
 
 # a dict of names that will conflict with the bullet regex
-ITEM_HACKS = dict(
-    {
-        "Arg": "Argo",
-        "Doritos Chips Nach": "Doritos Chips Nacho",
-        "Frit": "Frito",
-        "Jalapen": "Jalapeno",
-        "Kashi G": "Kashi Go",
-        "Golden Ore": "Golden Oreo",
-        "Nabisc": "Nabisco",
-        "Old El Pas": "Old El Paso",
-        "Ortega Jalapen": "Ortega Jalapeno",
-        "Oscar Mayer Ready T": "Oscar Mayer Ready To",
-        "Preg": "Prego",
-        "Progress": "Progresso",
-        "Sargent": "Sargento",
-    }
-)
+ITEM_HACKS = tuple([
+    "Arg",
+    "Nach",
+    "Frit",
+    "Jalapen",
+    "Kashi G",
+    "Ore",
+    "Nabisc",
+    "Old El Pas",
+    "Ready T",
+    "Potat",
+    "Preg",
+    "Progress",
+    "Sargent",
+])
 
 
 def apply_item_fix(tokens: List[str]):
@@ -70,9 +69,8 @@ def apply_item_fix(tokens: List[str]):
     while idx < len(tokens):
         token = tokens[idx]
 
-        if token in ITEM_HACKS and idx < len(tokens) - 1:
-            new_val = ITEM_HACKS[token]
-            retval.append(f"{new_val} {tokens[idx+1]}")
+        if token.endswith(ITEM_HACKS) and idx < len(tokens) - 1:
+            retval.append(f"{token}o {tokens[idx+1]}")
             idx += 1
         else:
             retval.append(token)
@@ -120,41 +118,41 @@ KNOWN_CATEGORIES = set(
 class Parser:
     def __init__(self):
         self.parsed_data: Dict[str, Dict[str, List[str]]] = {}
-        self.currentCategory: str = None
-        self.currentSubCategory: str = None
-        self.currentItem: str = None
+        self.current_category: str = None
+        self.current_sub_category: str = None
+        self.current_item: str = None
 
     def _finalize_current_item(self):
 
         # santiy check: if the current item is none, just return but warn that we have a logic error
-        if self.currentItem is None:
+        if self.current_item is None:
             # print("Null current item was almost finalized, skipping")
             return
 
         # sanity check: make sure we have a cat and sub cat
-        if self.currentCategory is None:
+        if self.current_category is None:
             raise Exception("attempted to finalize current items without cat")
 
-        if self.currentSubCategory is None:
+        if self.current_sub_category is None:
             raise Exception("attempted to finalize current items without sub cat")
 
-        if self.currentCategory not in self.parsed_data:
-            self.parsed_data[self.currentCategory] = {}
+        if self.current_category not in self.parsed_data:
+            self.parsed_data[self.current_category] = {}
 
-        if self.currentSubCategory not in self.parsed_data[self.currentCategory]:
-            self.parsed_data[self.currentCategory][self.currentSubCategory] = []
+        if self.current_sub_category not in self.parsed_data[self.current_category]:
+            self.parsed_data[self.current_category][self.current_sub_category] = []
 
-        self.parsed_data[self.currentCategory][self.currentSubCategory].append(
-            self.currentItem.strip()
+        self.parsed_data[self.current_category][self.current_sub_category].append(
+            self.current_item.strip()
         )
-        self.currentItem = None
+        self.current_item = None
 
     def _update_current_item(self, data: str):
-        if self.currentItem is None:
-            self.currentItem = data
+        if self.current_item is None:
+            self.current_item = data
 
         else:
-            self.currentItem = f"{self.currentItem} {data}"
+            self.current_item = f"{self.current_item} {data}"
 
     def process_raw_line(self, raw_line: str):
 
@@ -165,23 +163,23 @@ class Parser:
             return
 
         # if it matches a known category set it
-        elif line in KNOWN_CATEGORIES:
+        if line in KNOWN_CATEGORIES:
             self._finalize_current_item()
-            self.currentCategory = line
-            self.currentSubCategory = None
+            self.current_category = line
+            self.current_sub_category = None
             return
 
         # if it's a blank line, most like a new sub category
-        elif line == "":
+        if line == "":
             self._finalize_current_item()
-            self.currentSubCategory = None
+            self.current_sub_category = None
             return
 
-        elif self.currentSubCategory is None and not BULLET_REGEX.match(line):
+        if self.current_sub_category is None and not BULLET_REGEX.match(line):
             new_sub_cat = (
                 line if line not in OVERRIDE_SUB_CAT else OVERRIDE_SUB_CAT[line]
             )
-            self.currentSubCategory = new_sub_cat
+            self.current_sub_category = new_sub_cat
             return
 
         # if there's a weird case where it didn't space correctly
@@ -190,12 +188,12 @@ class Parser:
         if len(hacks) > 1:
             raise Exception("can't handle multiple hacks on same line")
 
-        elif len(hacks) == 1:
+        if len(hacks) == 1:
             (left, right) = hacks[0]["lambda"](line)
             if left is not None:
                 self._update_current_item(left)
             self._finalize_current_item()
-            self.currentSubCategory = right
+            self.current_sub_category = right
             return
 
         # test to see if the line has one or more bullets
@@ -207,7 +205,6 @@ class Parser:
             return
 
         # if the bullet is at the beginning, process new line
-        processed_first_item = False
         line_starts_new_bullet = bullets[0] == 0
 
         # split the line by bullets

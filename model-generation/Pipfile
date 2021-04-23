@@ -16,8 +16,10 @@ pytest = "*"
 flake8 = "*"
 flake8-mypy = "*"
 black = "*"
+pylint = "*"
 
 [scripts]
+lint = "pylint parse_pdf"
 test = "python -m pytest -s"
 extract_pdf_txt = "python extract_pdf_txt.py"
 

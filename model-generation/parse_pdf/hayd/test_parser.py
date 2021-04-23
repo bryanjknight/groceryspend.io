@@ -106,6 +106,11 @@ def test_parse_works():
             "Nabisco"
         ],
         [
+            ["Nabisc", "Golden Ore", "Sandwich Cookies, 14.3 oz"],
+            ["Nabisco Golden Oreo Sandwich Cookies, 14.3 oz"],
+            "Nabisco and Oreo"
+        ],        
+        [
             ["Arg", "Double Acting Aluminium Free"],
             ["Argo Double Acting Aluminium Free"],
             "Argo"

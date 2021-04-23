@@ -10,7 +10,7 @@
 			"path": "web"
 		},
 		{
-			"path": "spike-python-ml"
+			"path": "model-generation"
 		}
 	],
 	"settings": {
