@@ -44,21 +44,54 @@ NEW_SUB_CATEGORY_HACKS = [
     {"regex": regex.compile("o  Cream Cheese"), "lambda": strip_unnecessary_bullet},
 ]
 
-# a dict of names that will conflict with the bullet regex
+# a dict of names that will conflict with the bullet regex, Basically we get over aggressive on
+# splitting by "o " and actually cut the words off. This is to improve training
 ITEM_HACKS = tuple([
+    "A T",
+    "Alp",
     "Arg",
+    "Avocad",
+    "Bars N",
+    "Crisc",
+    "Cut N",
+    "Comb",
+    "Cilantr",
+    "Dran",
+    "Del Monte N",
+    "Digiorn",
     "Nach",
     "Frit",
+    "Giorgi",
+    "Goya Pint",
+    "Hormel Chili N",
+    "Hormel Chili Hot N",
+    "Hostess H",
     "Jalapen",
+    "Jumb",
     "Kashi G",
-    "Ore",
+    "Kar",
+    "Kellogg's Egg",
+    "Kernel N",
+    "Mang",
+    "Maraschin",
     "Nabisc",
+    "Ocel",
     "Old El Pas",
+    "On The G",
+    "Ore",
     "Ready T",
     "Potat",
     "Preg",
+    "Prego Homestyle Alfred",
     "Progress",
     "Sargent",
+    "Splenda N",
+    "Sprite N",
+    "Zer",
+    "Tac",
+    "Tabasc",
+    "Tomat",
+    "Turb",
 ])
 
 
@@ -151,6 +184,11 @@ class Parser:
 
         if self.current_sub_category is None:
             raise Exception("attempted to finalize current items without sub cat")
+
+        if len(self.current_item) < 2:
+            print(f"Item '{self.current_item}' is too short, skipping")
+            self.current_item = None
+            return
 
         if self.current_category not in self.parsed_data:
             self.parsed_data[self.current_category] = {}
