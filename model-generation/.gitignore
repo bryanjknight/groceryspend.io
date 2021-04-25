@@ -4,3 +4,4 @@
 .vscode/settings.json
 output/
 *.pyc
+notebooks/.ipynb_checkpoints
