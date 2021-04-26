@@ -10,20 +10,29 @@ scipy = "*"
 pandas = "*"
 lxml = "*"
 pdfplumber = "*"
-tika = "*"
+requests = "*"
+flask = "*"
+joblib = "*"
+
+[dev-packages]
+black = "*"
 mypy = "*"
 pytest = "*"
 flake8 = "*"
 flake8-mypy = "*"
-black = "*"
 pylint = "*"
+jupyter = "*"
+matplotlib = "*"
+seaborn = "*"
+
 
 [scripts]
-lint = "pylint parse_pdf"
+lint = "pylint training"
 test = "python -m pytest -s"
 extract_pdf_txt = "python extract_pdf_txt.py"
 
-[dev-packages]
-
 [requires]
 python_version = "3.9"
+
+[pipenv]
+allow_prereleases = true

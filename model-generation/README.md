@@ -8,6 +8,7 @@ Install
 * `pyenv` to install python 3.9
 * Set up your terminal to use the .pyenv directory 
 * `pyenv install 3.9.4` (change minor version accordingly)
+* `pipenv install --pre`
 * `PIPENV_VENV_IN_PROJECT="enabled" pipenv install ` to create the pip environment
 
 
@@ -19,6 +20,13 @@ Notes
   * https://helpatyourdoor.org/wp-content/uploads/2018/02/2018-Store-Brand-Catalog.pdf
 * I need to test the trained model with other data
 
+Scikit-Learn Approach
+---
+
+1. Run `pipenv shell`
+1. Run `jupyter notebook` in shell
+1. Log into Jupyter using the link provided
+1. Run `scikit-learn-train-model.ipynb`
 
 
 TensorFlow Approach
