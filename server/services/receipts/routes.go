@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"groceryspend.io/server/middleware"
+	"groceryspend.io/server/services/categorize"
 	"groceryspend.io/server/services/users"
 	"groceryspend.io/server/utils"
 )
@@ -16,8 +17,9 @@ func WebhookRoutes(route *gin.Engine, middleware *middleware.Context) {
 
 	repo := NewMongoReceiptRepository()
 	userClient := users.NewDefaultClient()
+	categorizeClient := categorize.NewDefaultClient()
 
-	router.POST("receipt", middleware.VerifySession(), handleSubmitReceipt(repo, middleware, userClient))
+	router.POST("receipt", middleware.VerifySession(), handleSubmitReceipt(repo, middleware, userClient, categorizeClient))
 }
 
 type submitReceiptForParsing struct {
@@ -26,7 +28,7 @@ type submitReceiptForParsing struct {
 	Data      string `json:"data"`
 }
 
-func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClient users.Client) gin.HandlerFunc {
+func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClient users.Client, categorizeClient categorize.Client) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
 		var req submitReceiptForParsing
@@ -83,6 +85,27 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClie
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+		}
+
+		// TODO: this is actually fairly slow and not necessary for validating a parse was complete
+		//			 we should make this async and store the results
+		itemNames := []string{}
+		itemToCat := make(map[string]string)
+
+		for _, item := range receipt.ParsedItems {
+			itemNames = append(itemNames, item.Name)
+		}
+
+		err = categorizeClient.GetCategoryForItem(itemNames, &itemToCat)
+		if err != nil {
+			m.Error(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+
+		for k, v := range itemToCat {
+			println(fmt.Sprintf("%v: %v", k, v))
 		}
 
 		// print out the details
