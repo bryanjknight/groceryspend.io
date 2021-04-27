@@ -1,4 +1,4 @@
-import parse_pdf.hayd.parser as parser
+import training.categorize.fetch.hayd.parser as parser
 import pytest
 
 TEST_DATA = """Product Selection 
