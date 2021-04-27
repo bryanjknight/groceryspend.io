@@ -1,5 +1,5 @@
 import json
-import pickle
+import os
 
 from flask import abort, Flask, request, jsonify, make_response, redirect, Response
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -10,20 +10,14 @@ import numpy as np
 import pandas as pd
 import sklearn
 
+from training.categorize.train import CategorizeTuple
 
 app = Flask(__name__)
 
-# TODO: make this more configurable
-
-id_to_category = joblib.load("/Users/bknight/dev/groceryspend.io/monorepo/model-generation/notebooks/id_to_category.pkl")
-categorize_model = joblib.load("/Users/bknight/dev/groceryspend.io/monorepo/model-generation/notebooks/model.pkl")
-tfidf = joblib.load("/Users/bknight/dev/groceryspend.io/monorepo/model-generation/notebooks/tfidf.pkl")
-
+cat_tuple: CategorizeTuple = joblib.load(os.environ['CAT_MODEL'])
 
 def init():
     pass
-
-
 
 @app.route("/categorize", methods=["POST"])
 def categorize():
@@ -31,9 +25,9 @@ def categorize():
     if not items or len(items) == 0:
         return abort(400)
 
-    item_features = tfidf.transform(items)
-    predictions = categorize_model.predict(item_features)
-    retval = { items[i]: id_to_category[predictions[i]] for i in range(len(predictions)) }
+    item_features = cat_tuple.tfidf.transform(items)
+    predictions = cat_tuple.model.predict(item_features)
+    retval = { items[i]: cat_tuple.id_to_cat[predictions[i]] for i in range(len(predictions)) }
     return jsonify(retval)
 
 

@@ -12,31 +12,10 @@ Install
 * `PIPENV_VENV_IN_PROJECT="enabled" pipenv install ` to create the pip environment
 
 
-Notes
+Train
 ---
-* Using https://scikit-learn.org/stable/tutorial/text_analytics/working_with_text_data.html
+1. `PYTHONPATH=. python training/run.py`
 
-* I need training data
-  * https://helpatyourdoor.org/wp-content/uploads/2018/02/2018-Store-Brand-Catalog.pdf
-* I need to test the trained model with other data
-
-Scikit-Learn Approach
+Deploy as Flask API
 ---
-
-1. Run `pipenv shell`
-1. Run `jupyter notebook` in shell
-1. Log into Jupyter using the link provided
-1. Run `scikit-learn-train-model.ipynb`
-
-
-TensorFlow Approach
-===
-
-* `docker pull tensorflow/tensorflow:latest-jupyter`
-  * get the latest tensorflow with jupyter support
-
-* Build a new image with the additional libraries we need
-
-
-* `docker run -it -p 8888:8888 -v $PWD/tf:/ bk-test`
-  * start an instance, save notebooks to `./notebooks`
+1. `FLASK_APP=web python -m flask run`

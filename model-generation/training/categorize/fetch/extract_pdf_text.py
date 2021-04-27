@@ -1,7 +1,7 @@
 import pdfplumber
 import sys
-import training.categorize.hayd.parser as hayd_parser
-import training.categorize.export as export_csv
+import training.categorize.fetch.hayd.parser as hayd_parser
+import training.categorize.fetch.export as export_csv
 
 if __name__ == "__main__":
 
