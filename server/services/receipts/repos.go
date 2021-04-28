@@ -64,7 +64,7 @@ func (r *PostgresReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptR
 // GetReceipts return all receipts for the given user
 func (r *PostgresReceiptRepository) GetReceipts(user uuid.UUID) ([]*ParsedReceipt, error) {
 	retval := []*ParsedReceipt{}
-	rows, err := r.DbConnection.Find(&[]ParsedReceipt{}).Where("user_id = ?", user).Rows()
+	rows, err := r.DbConnection.Find(&[]ParsedReceipt{}).Where("user_id = ?", user).Order("order_timestamp desc").Rows()
 	defer rows.Close()
 
 	if err != nil {
