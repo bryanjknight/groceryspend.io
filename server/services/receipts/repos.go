@@ -10,16 +10,17 @@ import (
 	"groceryspend.io/server/utils"
 )
 
-// AggregateCategoryResponse An aggregation of spend by category
-type AggregateCategoryResponse struct {
-	CategoryToSpend map[string]float32
+// AggregatedCategory An aggregation of spend by category
+type AggregatedCategory struct {
+	Category string
+	Value    float32
 }
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
 	SaveReceipt(receipt *ParsedReceipt) (string, error)
 	SaveReceiptRequest(request *UnparsedReceiptRequest) (string, error)
-	AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) (*AggregateCategoryResponse, error)
+	AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error)
 }
 
 // PostgresReceiptRepository is an implementation of the receipt datastore using postgres
@@ -58,6 +59,28 @@ func (r *PostgresReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptR
 }
 
 // AggregateSpendByCategoryOverTime get spend by category over time
-func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) (*AggregateCategoryResponse, error) {
-	return nil, nil
+func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
+	sql := `
+		select sum(total_cost) as value, category
+		from parsed_items pi
+		inner join parsed_receipts pr on
+			pi.parsed_receipt_id = pr.id
+		where pr.order_timestamp between ? and ?
+		group by category
+	`
+	retval := []*AggregatedCategory{}
+	rows, err := r.DbConnection.Raw(sql, start, end).Rows()
+	defer rows.Close()
+
+	if err != nil {
+		return retval, err
+	}
+
+	for rows.Next() {
+		var catSum AggregatedCategory
+		r.DbConnection.ScanRows(rows, &catSum)
+		retval = append(retval, &catSum)
+	}
+
+	return retval, nil
 }

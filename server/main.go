@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"groceryspend.io/server/middleware"
+	"groceryspend.io/server/services/analytics"
 	"groceryspend.io/server/services/receipts"
 	"groceryspend.io/server/utils"
 )
@@ -38,6 +39,7 @@ func main() {
 	}))
 
 	receipts.WebhookRoutes(r, middlewareContext)
+	analytics.Routes(r, middlewareContext)
 	r.Run("127.0.0.1:8080")
 
 }
