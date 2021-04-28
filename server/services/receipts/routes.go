@@ -78,6 +78,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 
 		receipt.OriginalURL = req.URL
 		receipt.UserID = userID
+		receipt.UnparsedReceiptRequestID = uuid.MustParse(requestID)
 
 		id, err := repo.AddReceipt(receipt)
 		if err != nil {

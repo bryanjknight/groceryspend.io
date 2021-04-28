@@ -28,6 +28,7 @@ type UnparsedReceiptRequest struct {
 	OriginalURL      string    `gorm:"notNull"`
 	RequestTimestamp time.Time `gorm:"notNull"`
 	RawHTML          string    `gorm:"notNull"`
+	ParsedReceipt    ParsedReceipt
 }
 
 // ParsedContainerSize the size of an item's container (e.g. a 16oz container of strawberries)
@@ -58,17 +59,18 @@ func (p ParsedItem) String() string {
 type ParsedReceipt struct {
 	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	UserID         uuid.UUID `gorm:"type:uuid"`
-	OriginalURL    string    `gorm:"notNull"`
+	OriginalURL    string    `gorm:"notNull;uniqueIndex:original_url_idx"`
 	OrderNumber    string    `gorm:"notNull"`
 	OrderTimestamp time.Time `gorm:"notNull"`
 	ParsedItems    []ParsedItem
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes
-	SalesTax    float32
-	Tip         float32
-	ServiceFee  float32
-	DeliveryFee float32
-	Discounts   float32
+	SalesTax                 float32
+	Tip                      float32
+	ServiceFee               float32
+	DeliveryFee              float32
+	Discounts                float32
+	UnparsedReceiptRequestID uuid.UUID `gorm:"type:uuid"`
 }
 
 func (p ParsedReceipt) String() string {
