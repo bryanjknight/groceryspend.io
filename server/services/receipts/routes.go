@@ -1,7 +1,6 @@
 package receipts
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -154,9 +153,6 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": err.Error(),
 				})
-			}
-			for k, v := range itemToCat {
-				println(fmt.Sprintf("%v: %v", k, v))
 			}
 			item.Category = itemToCat[item.Name]
 		}
