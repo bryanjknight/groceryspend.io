@@ -2,22 +2,40 @@ import { useApi } from './use-api';
 import React from 'react';
 import { Loading } from './Loading';
 import { Error } from './Error';
-import { Link } from 'react-router-dom';
+import { LinkProps, RouteComponentProps, RouteProps } from 'react-router-dom';
 
 const PORT = 8080;
 
 // TODO: possible use for io-ts to verify response
+
+interface Item {
+  ID: string;
+  TotalCost: number;
+  Qty: number;
+  Weight: number;
+  Name: string;
+  Category: string;
+}
+
 interface Receipt {
   ID: string;
   OriginalURL: string;
   OrderTimestamp: string;
+  ParsedItems: Item[];
+  SalesTax: number;
+  Tip: number;
+  ServiceFee: number;
+  DeliveryFee: number;
+  Discounts: number;
 }
 
 type ReceiptsResponse = Record<string, Receipt[]>
 
-export function Receipts(): JSX.Element {
+export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
+  const params = props.match.params;
+  const receiptID = "ID" in params ? params["ID"] : "";
   const { loading, error, data: resp = {} as ReceiptsResponse} = useApi(
-    `http://localhost:${PORT}/receipts/`,
+    `http://localhost:${PORT}/receipts/${receiptID}`,
     {
       audience: "https://bknight.dev.groceryspend.io",
       scope: 'read:users',
@@ -34,29 +52,22 @@ export function Receipts(): JSX.Element {
     return <Error message={error.message} />;
   }
 
-  const receipts: Receipt[] = "results" in resp ? resp["results"] : []
+  const receipt: Receipt = "results" in resp ? resp["results"] : {}
 
   return (
     <table className="table">
       <thead>
         <tr>
           <th scope="col">Date</th>
-          <th scope="col">Order Link</th>
-          <th scope="col">Details</th>
+          <th scope="col">Link</th>
         </tr>
       </thead>
       <tbody>
-        {receipts?.map(
-          (receipt: Receipt, i: number) => (
-            <tr key={receipt.ID}>
-              <td>{receipt.OrderTimestamp}</td>
-              <td><a href={receipt.OriginalURL}>Link to Original Order</a></td>
-              <td><Link to={{
-                pathname: `/receipt-details/${receipt.ID}`,
-                state: {
-                  id: receipt.ID
-                }
-              }}>Details</Link></td>
+        {receipt.ParsedItems?.map(
+          (item: Item, i: number) => (
+            <tr key={item.ID}>
+              <td>{item.Name}</td>
+              <td>${item.TotalCost}</td>
             </tr>
           )
         )}

@@ -8,6 +8,8 @@ import { Nav } from './Nav';
 import { Error } from './Error';
 import { Loading } from './Loading';
 import { Receipts } from './Receipts';
+import { ReceiptDetails } from './ReceiptDetails';
+
 
 // Use `createHashHistory` to use hash routing
 export const history = createBrowserHistory();
@@ -26,6 +28,7 @@ function App() {
       <Switch>
         <Route path="/" exact />
         <ProtectedRoute path="/receipts" component={Receipts} />
+        <ProtectedRoute path="/receipt-details/:ID" component={ReceiptDetails} />
       </Switch>
     </Router>
   );
