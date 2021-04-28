@@ -3,6 +3,7 @@ package receipts
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -23,10 +24,10 @@ func ParseStringToUSDAmount(s string) (float32, error) {
 
 // UnparsedReceiptRequest a request to parse a receipt
 type UnparsedReceiptRequest struct {
-	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	OriginalURL  string    `gorm:"notNull"`
-	IsoTimestamp string    `gorm:"notNull"`
-	RawHTML      string    `gorm:"notNull"`
+	ID               uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	OriginalURL      string    `gorm:"notNull"`
+	RequestTimestamp time.Time `gorm:"notNull"`
+	RawHTML          string    `gorm:"notNull"`
 }
 
 // ParsedContainerSize the size of an item's container (e.g. a 16oz container of strawberries)
@@ -55,12 +56,12 @@ func (p ParsedItem) String() string {
 
 // ParsedReceipt a fully parsed receipt
 type ParsedReceipt struct {
-	ID          uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	UserID      string    `gorm:"notNull"`
-	OriginalURL string    `gorm:"notNull"`
-	OrderNumber string    `gorm:"notNull"`
-	Timestamp   string    `gorm:"notNull"`
-	ParsedItems []ParsedItem
+	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	UserID         uuid.UUID `gorm:"type:uuid"`
+	OriginalURL    string    `gorm:"notNull"`
+	OrderNumber    string    `gorm:"notNull"`
+	OrderTimestamp time.Time `gorm:"notNull"`
+	ParsedItems    []ParsedItem
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes
 	SalesTax    float32

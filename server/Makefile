@@ -13,4 +13,7 @@ run:
 	docker compose up -d
 	go run main.go
 
+clean:
+	rm -rf docker_data/pgdata/
+
 all: lint build unit-test

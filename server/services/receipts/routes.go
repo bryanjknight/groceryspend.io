@@ -3,7 +3,7 @@ package receipts
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"groceryspend.io/server/middleware"
@@ -58,7 +58,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClie
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}
 		receiptRequest.RawHTML = req.Data
-		receiptRequest.IsoTimestamp = req.Timestamp
+		receiptRequest.RequestTimestamp = time.Now()
 		receiptRequest.OriginalURL = req.URL
 
 		requestID, err := repo.AddReceiptRequest(receiptRequest)
@@ -81,12 +81,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClie
 		}
 
 		receipt.OriginalURL = req.URL
-
-		// FIXME: this is wrong, it should be the parsed date and time delivery was made
-		receipt.Timestamp = req.Timestamp
-		splitURL := strings.Split(req.URL, "/")
-		receipt.OrderNumber = splitURL[len(splitURL)-1]
-		receipt.UserID = user.UserUUID.String()
+		receipt.UserID = user.UserUUID
 
 		id, err := repo.AddReceipt(receipt)
 		if err != nil {

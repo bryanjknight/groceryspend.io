@@ -17,7 +17,16 @@ func ParseReceipt(request UnparsedReceiptRequest) (ParsedReceipt, error) {
 		return ParsedReceipt{}, err
 	}
 	if strings.Contains(request.OriginalURL, "instacart.com") {
-		return ParseInstacartHTMLReceipt(parsedHTML)
+
+		receipt, err := ParseInstacartHTMLReceipt(parsedHTML)
+		if err != nil {
+			return ParsedReceipt{}, err
+		}
+
+		// get the order number from the URL
+		splitURL := strings.Split(request.OriginalURL, "/")
+		receipt.OrderNumber = splitURL[len(splitURL)-1]
+		return receipt, nil
 	}
 	if strings.Contains(request.OriginalURL, "amazon.com") {
 		return ParseWfmHTMLRecipt(parsedHTML)
