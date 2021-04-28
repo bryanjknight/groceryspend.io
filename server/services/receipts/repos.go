@@ -97,6 +97,7 @@ func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.U
 			pi.parsed_receipt_id = pr.id
 		where pr.order_timestamp between ? and ?
 		group by category
+		order by sum(total_cost) desc
 	`
 	retval := []*AggregatedCategory{}
 	rows, err := r.DbConnection.Raw(sql, start, end).Rows()
