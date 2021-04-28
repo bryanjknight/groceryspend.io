@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"groceryspend.io/server/utils"
 )
@@ -20,6 +21,8 @@ type AggregatedCategory struct {
 type ReceiptRepository interface {
 	SaveReceipt(receipt *ParsedReceipt) (string, error)
 	SaveReceiptRequest(request *UnparsedReceiptRequest) (string, error)
+	GetReceipts(user uuid.UUID) ([]*ParsedReceipt, error)
+	GetReceiptDetail(receiptID uuid.UUID) (*ParsedReceipt, error)
 	AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error)
 }
 
@@ -56,6 +59,33 @@ func (r *PostgresReceiptRepository) SaveReceipt(receipt *ParsedReceipt) (string,
 func (r *PostgresReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptRequest) (string, error) {
 	r.DbConnection.Save(request)
 	return request.ID.String(), nil
+}
+
+// GetReceipts return all receipts for the given user
+func (r *PostgresReceiptRepository) GetReceipts(user uuid.UUID) ([]*ParsedReceipt, error) {
+	retval := []*ParsedReceipt{}
+	rows, err := r.DbConnection.Find(&[]ParsedReceipt{}).Where("user_id = ?", user).Rows()
+	defer rows.Close()
+
+	if err != nil {
+		return retval, err
+	}
+
+	for rows.Next() {
+		var tmp ParsedReceipt
+		r.DbConnection.ScanRows(rows, &tmp)
+		retval = append(retval, &tmp)
+	}
+
+	return retval, nil
+
+}
+
+// GetReceiptDetail return specific receipt details
+func (r *PostgresReceiptRepository) GetReceiptDetail(receiptID uuid.UUID) (*ParsedReceipt, error) {
+	var retval *ParsedReceipt
+	r.DbConnection.Preload(clause.Associations).First(&retval, receiptID)
+	return retval, nil
 }
 
 // AggregateSpendByCategoryOverTime get spend by category over time
