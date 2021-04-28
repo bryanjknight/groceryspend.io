@@ -3,8 +3,10 @@ package receipts
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -16,6 +18,38 @@ type InstacartTipTaxesFees struct {
 	ServiceFee  float32
 	DeliveryFee float32
 	Discounts   float32
+}
+
+func parseOrderTime(li *html.Node) (time.Time, error) {
+	// Assumption: the date of delivery always starts with "Delivered". So we're going to search for a <p>
+	// 						 that has that pattern
+
+	re, err := regexp.Compile("Delivered")
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	nodes := GetElementByTextContent(li, "p", *&re)
+
+	if len(nodes) != 1 {
+		return time.Time{}, fmt.Errorf("expected one node for time, got %v", len(nodes))
+	}
+
+	timeString := strings.Replace(nodes[0].FirstChild.Data, "Delivered ", "", 1)
+
+	// FIXME: Assuming America/New_York, need to convert ZIP to timezone
+	//				format is Apr 18, 2021, 6:36 PM, but we need to represent a timestamp
+	//				as Jan 2 15:04:05 2006 MST
+	format := "Jan _2, 2006, 3:04 PM"
+	loc, _ := time.LoadLocation("America/New_York")
+	ts, err := time.ParseInLocation(format, timeString, loc)
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return ts, nil
+
 }
 
 func parseLineItem(li *html.Node) (ParsedItem, error) {
@@ -212,6 +246,12 @@ func ParseInstacartHTMLReceipt(doc *html.Node) (ParsedReceipt, error) {
 		return ParsedReceipt{}, err
 	}
 
+	// get order timestamp
+	orderTimestamp, err := parseOrderTime(doc)
+	if err != nil {
+		return ParsedReceipt{}, err
+	}
+
 	retval := ParsedReceipt{}
 	retval.ParsedItems = itemsFound
 	retval.DeliveryFee = taxTipFees.DeliveryFee
@@ -219,6 +259,7 @@ func ParseInstacartHTMLReceipt(doc *html.Node) (ParsedReceipt, error) {
 	retval.ServiceFee = taxTipFees.ServiceFee
 	retval.Discounts = taxTipFees.Discounts
 	retval.Tip = taxTipFees.Tip
+	retval.OrderTimestamp = orderTimestamp
 
 	return retval, nil
 }

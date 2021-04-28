@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -33,12 +34,29 @@ func TestInstacartReceipt(t *testing.T) {
 		ExpectedTotalItems int
 		ExpectedSubtotal   float32
 		ExpectedTotal      float32
+		OrderTimestamp     time.Time
 	}
 
+	loc, _ := time.LoadLocation("America/New_York")
+
 	tests := []test{
-		{OrderNumber: "wegmans-replace-refund", ExpectedTotalItems: 27, ExpectedSubtotal: 150.96, ExpectedTotal: 188.44},
+		{
+			OrderNumber:        "wegmans-replace-refund",
+			ExpectedTotalItems: 27,
+			ExpectedSubtotal:   150.96,
+			ExpectedTotal:      188.44,
+			// Mar 28, 2021, 9:16 AM
+			OrderTimestamp: time.Date(2021, 3, 28, 9, 16, 0, 0, loc),
+		},
 		// Note that bj's has a different subtotal. There's a bug in instacart, so we will calculate subtotal ourselves
-		{OrderNumber: "bj-wholesale-all-found", ExpectedTotalItems: 6, ExpectedSubtotal: 202.93, ExpectedTotal: 255.62},
+		{
+			OrderNumber:        "bj-wholesale-all-found",
+			ExpectedTotalItems: 6,
+			ExpectedSubtotal:   202.93,
+			ExpectedTotal:      255.62,
+			// Mar 28, 2021, 10:27 AM
+			OrderTimestamp: time.Date(2021, 3, 28, 10, 27, 0, 0, loc),
+		},
 	}
 
 	for _, test := range tests {
@@ -79,6 +97,10 @@ func TestInstacartReceipt(t *testing.T) {
 
 		if expectedTotal != actualTotal {
 			t.Errorf("Expected total %v, got %v", expectedTotal, actualTotal)
+		}
+
+		if !test.OrderTimestamp.Equal(receipt.OrderTimestamp) {
+			t.Errorf("Expected timestamp %v, got %v", test.OrderTimestamp, receipt.OrderTimestamp)
 		}
 	}
 }
