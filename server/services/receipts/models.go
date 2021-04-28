@@ -49,6 +49,7 @@ type ParsedItem struct {
 	ContainerSize   ParsedContainerSize
 	Name            string    `gorm:"notNull"`
 	ParsedReceiptID uuid.UUID `gorm:"type:uuid;notNull"`
+	Category        string    `gorm:"notNull"`
 }
 
 func (p ParsedItem) String() string {
@@ -62,7 +63,7 @@ type ParsedReceipt struct {
 	OriginalURL    string    `gorm:"notNull;uniqueIndex:original_url_idx"`
 	OrderNumber    string    `gorm:"notNull"`
 	OrderTimestamp time.Time `gorm:"notNull"`
-	ParsedItems    []ParsedItem
+	ParsedItems    []*ParsedItem
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes
 	SalesTax                 float32

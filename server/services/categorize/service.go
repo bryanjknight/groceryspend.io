@@ -10,7 +10,7 @@ import (
 )
 
 type CategoryExternalService interface {
-	GetCategoryForItem(items []string, target *map[string]string) error
+	GetCategoryForItems(items []string, target *map[string]string) error
 }
 
 type DefaultCategoryExternalService struct {
@@ -25,7 +25,7 @@ func NewDefaultCategoryExternalService() *DefaultCategoryExternalService {
 	}
 }
 
-func (s *DefaultCategoryExternalService) GetCategoryForItem(items []string, target *map[string]string) error {
+func (s *DefaultCategoryExternalService) GetCategoryForItems(items []string, target *map[string]string) error {
 
 	itemsJson, _ := json.Marshal(items)
 	body := strings.NewReader(string(itemsJson))

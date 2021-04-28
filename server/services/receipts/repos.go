@@ -17,8 +17,8 @@ type AggregateCategoryResponse struct {
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
-	AddReceipt(receipt ParsedReceipt) (string, error)
-	AddReceiptRequest(request UnparsedReceiptRequest) (string, error)
+	SaveReceipt(receipt *ParsedReceipt) (string, error)
+	SaveReceiptRequest(request *UnparsedReceiptRequest) (string, error)
 	AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) (*AggregateCategoryResponse, error)
 }
 
@@ -44,21 +44,20 @@ func NewPostgresReceiptRepository() *PostgresReceiptRepository {
 	return &retval
 }
 
-// AddReceipt store parsed receipt to database
-func (r *PostgresReceiptRepository) AddReceipt(receipt ParsedReceipt) (string, error) {
-	r.DbConnection.Create(&receipt)
+// SaveReceipt store parsed receipt to database
+func (r *PostgresReceiptRepository) SaveReceipt(receipt *ParsedReceipt) (string, error) {
+	r.DbConnection.Save(receipt)
 	return receipt.ID.String(), nil
 
 }
 
-// AddReceiptRequest store the receipt request in the database
-func (r *PostgresReceiptRepository) AddReceiptRequest(request UnparsedReceiptRequest) (string, error) {
-	r.DbConnection.Create(&request)
+// SaveReceiptRequest store the receipt request in the database
+func (r *PostgresReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptRequest) (string, error) {
+	r.DbConnection.Save(request)
 	return request.ID.String(), nil
 }
 
 // AggregateSpendByCategoryOverTime get spend by category over time
 func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) (*AggregateCategoryResponse, error) {
-
 	return nil, nil
 }

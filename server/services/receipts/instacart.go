@@ -103,9 +103,9 @@ func parseLineItem(li *html.Node) (ParsedItem, error) {
 	return retval, nil
 }
 
-func parseItemsFound(ul *html.Node) ([]ParsedItem, error) {
+func parseItemsFound(ul *html.Node) ([]*ParsedItem, error) {
 
-	retval := []ParsedItem{}
+	retval := []*ParsedItem{}
 
 	// iterate through each item
 	for li := ul.FirstChild; li != nil; li = li.NextSibling {
@@ -114,13 +114,13 @@ func parseItemsFound(ul *html.Node) ([]ParsedItem, error) {
 			println(err)
 			continue
 		}
-		retval = append(retval, pi)
+		retval = append(retval, &pi)
 	}
 	return retval, nil
 }
 
-func parseReplacementsAndRefunded(children []*html.Node) ([]ParsedItem, error) {
-	retval := []ParsedItem{}
+func parseReplacementsAndRefunded(children []*html.Node) ([]*ParsedItem, error) {
+	retval := []*ParsedItem{}
 
 	// if there's more than 2, then we have either
 	// replacements

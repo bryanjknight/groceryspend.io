@@ -1,7 +1,7 @@
 package categorize
 
 type Client interface {
-	GetCategoryForItem(items []string, target *map[string]string) error
+	GetCategoryForItems(items []string, target *map[string]string) error
 }
 
 type DefaultClient struct {
@@ -14,8 +14,8 @@ func NewDefaultClient() *DefaultClient {
 	}
 }
 
-func (c *DefaultClient) GetCategoryForItem(items []string, target *map[string]string) error {
-	err := c.service.GetCategoryForItem(items, target)
+func (c *DefaultClient) GetCategoryForItems(items []string, target *map[string]string) error {
+	err := c.service.GetCategoryForItems(items, target)
 	if err != nil {
 		return err
 	}

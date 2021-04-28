@@ -57,7 +57,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 		receiptRequest.RequestTimestamp = time.Now()
 		receiptRequest.OriginalURL = req.URL
 
-		requestID, err := repo.AddReceiptRequest(receiptRequest)
+		requestID, err := repo.SaveReceiptRequest(&receiptRequest)
 		if err != nil {
 			m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -76,41 +76,37 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 			return
 		}
 
+		// categorize the items
+		for _, item := range receipt.ParsedItems {
+			itemNames := []string{item.Name}
+			itemToCat := make(map[string]string)
+
+			err = categorizeClient.GetCategoryForItems(itemNames, &itemToCat)
+			if err != nil {
+				m.Error(err.Error())
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+			}
+			for k, v := range itemToCat {
+				println(fmt.Sprintf("%v: %v", k, v))
+			}
+			item.Category = itemToCat[item.Name]
+		}
+
 		receipt.OriginalURL = req.URL
 		receipt.UserID = userID
 		receipt.UnparsedReceiptRequestID = uuid.MustParse(requestID)
 
-		id, err := repo.AddReceipt(receipt)
+		id, err := repo.SaveReceipt(&receipt)
 		if err != nil {
 			m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
-		}
-
-		// TODO: this is actually fairly slow and not necessary for validating a parse was complete
-		//			 we should make this async and store the results
-		itemNames := []string{}
-		itemToCat := make(map[string]string)
-
-		for _, item := range receipt.ParsedItems {
-			itemNames = append(itemNames, item.Name)
-		}
-
-		err = categorizeClient.GetCategoryForItem(itemNames, &itemToCat)
-		if err != nil {
-			m.Error(err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-		}
-
-		for k, v := range itemToCat {
-			println(fmt.Sprintf("%v: %v", k, v))
 		}
 
 		// print out the details
-		m.Info(receipt.String())
 		m.Info("Object ID of receipt: %v", id)
 
 		c.JSON(http.StatusAccepted, gin.H{
