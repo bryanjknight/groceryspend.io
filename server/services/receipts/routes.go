@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"groceryspend.io/server/middleware"
 	"groceryspend.io/server/services/categorize"
-	"groceryspend.io/server/services/users"
-	"groceryspend.io/server/utils"
 )
 
 // WebhookRoutes defines all webhook routes
@@ -17,10 +16,9 @@ func WebhookRoutes(route *gin.Engine, middleware *middleware.Context) {
 	router := route.Group("/receipts")
 
 	repo := NewPostgresReceiptRepository()
-	userClient := users.NewDefaultClient()
 	categorizeClient := categorize.NewDefaultClient()
 
-	router.POST("receipt", middleware.VerifySession(), handleSubmitReceipt(repo, middleware, userClient, categorizeClient))
+	router.POST("receipt", middleware.VerifySession(), handleSubmitReceipt(repo, middleware, categorizeClient))
 }
 
 type submitReceiptForParsing struct {
@@ -29,7 +27,7 @@ type submitReceiptForParsing struct {
 	Data      string `json:"data"`
 }
 
-func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClient users.Client, categorizeClient categorize.Client) gin.HandlerFunc {
+func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categorizeClient categorize.Client) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
 		var req submitReceiptForParsing
@@ -43,17 +41,15 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClie
 		}
 
 		userID := m.UserIDFromRequest(c.Request)
-		user, err := userClient.LookupUserByAuthProvider(utils.GetOsValue("AUTH_PROVIDER"), userID)
-		if err != nil {
-			m.Error(fmt.Sprintf("Failed to look up %v", userID))
-			m.Error(err.Error())
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+		if userID == uuid.Nil {
+			m.Error("Failed to look up user ID")
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to look up user",
 			})
 			return
 		}
 
-		m.Info("User ID: '%v'", user.UserUUID)
+		m.Info("User ID: '%v'", userID)
 
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}
@@ -81,7 +77,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClie
 		}
 
 		receipt.OriginalURL = req.URL
-		receipt.UserID = user.UserUUID
+		receipt.UserID = userID
 
 		id, err := repo.AddReceipt(receipt)
 		if err != nil {

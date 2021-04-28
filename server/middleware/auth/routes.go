@@ -4,13 +4,15 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/kofalt/go-memoize"
+	"groceryspend.io/server/services/users"
 )
 
 // Middleware middleware to verify session and access
 type Middleware interface {
 	VerifySession() gin.HandlerFunc
-	UserIDFromRequest(r *http.Request) string
+	UserIDFromRequest(r *http.Request) uuid.UUID
 }
 
 // DenyAllMiddleware denies all traffic
@@ -32,8 +34,8 @@ func (d *DenyAllMiddleware) VerifySession() gin.HandlerFunc {
 }
 
 // UserIDFromRequest get user ID from request
-func (d *DenyAllMiddleware) UserIDFromRequest(r *http.Request) string {
-	return ""
+func (d *DenyAllMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
+	return uuid.Nil
 }
 
 // PassthroughMiddleware allows all traffic and does no checks
@@ -54,8 +56,8 @@ func (p *PassthroughMiddleware) VerifySession() gin.HandlerFunc {
 }
 
 // UserIDFromRequest get user ID from request
-func (p *PassthroughMiddleware) UserIDFromRequest(r *http.Request) string {
-	return ""
+func (p *PassthroughMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
+	return uuid.Nil
 }
 
 // NewAuthMiddleware create a new auth middleware for auth/authz
@@ -66,7 +68,8 @@ func NewAuthMiddleware(config string, cache *memoize.Memoizer) Middleware {
 		return NewPassthroughAuthMiddleware()
 
 	case "AUTH0":
-		return NewAuth0JwtAuthMiddleware(cache)
+		userClient := users.NewDefaultClient()
+		return NewAuth0JwtAuthMiddleware(cache, userClient)
 	}
 
 	println("Unable to match middleware config with middleware, defaulting to deny all")

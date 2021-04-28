@@ -9,7 +9,10 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/form3tech-oss/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/kofalt/go-memoize"
+	"groceryspend.io/server/services/users"
+	"groceryspend.io/server/utils"
 )
 
 type response struct {
@@ -80,11 +83,12 @@ func getPemCert(token *jwt.Token, cache *memoize.Memoizer) (string, error) {
 
 // Auth0JwtAuthMiddleware leverages Auth0 for auth/authz and session management
 type Auth0JwtAuthMiddleware struct {
+	userClient users.Client
 	middleware *jwtmiddleware.JWTMiddleware
 }
 
 // NewAuth0JwtAuthMiddleware create a auth middleware leveraging Auth0
-func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer) *Auth0JwtAuthMiddleware {
+func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer, userClient users.Client) *Auth0JwtAuthMiddleware {
 
 	// TODO: initialize cache wtih JWKS so that we don't have to wait for the cache
 	//			 to warm up. It's about 500ms extra, but definitely noticeable
@@ -120,6 +124,7 @@ func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer) *Auth0JwtAuthMiddleware 
 
 	return &Auth0JwtAuthMiddleware{
 		middleware: jwtmiddleware,
+		userClient: userClient,
 	}
 }
 
@@ -142,11 +147,19 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 }
 
 // UserIDFromRequest fetch the user ID from the JWT
-func (m *Auth0JwtAuthMiddleware) UserIDFromRequest(r *http.Request) string {
+func (m *Auth0JwtAuthMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
 	u := r.Context().Value("user")
 	user := u.(*jwt.Token)
 	iss := user.Claims.(jwt.MapClaims)["iss"].(string)
 	sub := user.Claims.(jwt.MapClaims)["sub"].(string)
 
-	return iss + "|" + sub
+	auth0ID := iss + "|" + sub
+
+	canonicalUser, err := m.userClient.LookupUserByAuthProvider(utils.GetOsValue("AUTH_PROVIDER"), auth0ID)
+	if err != nil {
+		// FIXME: should handle this better
+		return uuid.Nil
+	}
+
+	return canonicalUser.UserUUID
 }
