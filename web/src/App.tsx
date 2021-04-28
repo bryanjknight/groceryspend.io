@@ -7,7 +7,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { Nav } from './Nav';
 import { Error } from './Error';
 import { Loading } from './Loading';
-import { Users } from './Users';
+import { Receipts } from './Receipts';
 
 // Use `createHashHistory` to use hash routing
 export const history = createBrowserHistory();
@@ -25,7 +25,7 @@ function App() {
       {error && <Error message={error.message} />}
       <Switch>
         <Route path="/" exact />
-        <ProtectedRoute path="/users" component={Users} />
+        <ProtectedRoute path="/receipts" component={Receipts} />
       </Switch>
     </Router>
   );

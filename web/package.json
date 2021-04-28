@@ -15,7 +15,6 @@
     "build": "webpack --mode=production",
     "lint": "eslint ./src/**/*.{ts,tsx}",
     "test": "jest",
-    "watch": "webpack watch",
     "start": "webpack serve --open",
     "prepare": "cd .. && husky install browser-extension/.husky"
   },

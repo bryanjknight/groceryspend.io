@@ -23,12 +23,12 @@ export function Nav() {
             Home
           </Link>
           <Link
-            to="/users"
+            to="/receipts"
             className={`nav-item nav-link${
-              pathname === '/users' ? ' active' : ''
+              pathname === '/receipts' ? ' active' : ''
             }`}
           >
-            Users
+            Receipts
           </Link>
         </div>
       </div>
