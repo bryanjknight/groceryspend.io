@@ -10,7 +10,7 @@ unit-test:
 	go test --cover -v ./...
 
 run:
-	docker-compose up -d
+	docker compose up -d
 	go run main.go
 
 all: lint build unit-test

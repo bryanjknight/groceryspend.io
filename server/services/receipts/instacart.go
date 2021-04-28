@@ -42,10 +42,6 @@ func parseLineItem(li *html.Node) (ParsedItem, error) {
 	if err != nil {
 		return ParsedItem{}, errors.New("failed to parse Unit Price")
 	}
-	// containerSize := ""
-	// if len(tmpSlice) > 1 {
-	// 	containerSize = tmpSlice[1]
-	// }
 
 	qtyDiv := topLevelDiv.LastChild
 	qtyPTags := GetElementsByTagName(qtyDiv, "p")

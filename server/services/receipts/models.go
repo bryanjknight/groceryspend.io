@@ -3,6 +3,9 @@ package receipts
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/google/uuid"
+
 	"strings"
 )
 
@@ -20,25 +23,30 @@ func ParseStringToUSDAmount(s string) (float32, error) {
 
 // UnparsedReceiptRequest a request to parse a receipt
 type UnparsedReceiptRequest struct {
-	OriginalURL  string
-	IsoTimestamp string
-	RawHTML      string
+	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	OriginalURL  string    `gorm:"notNull"`
+	IsoTimestamp string    `gorm:"notNull"`
+	RawHTML      string    `gorm:"notNull"`
 }
 
 // ParsedContainerSize the size of an item's container (e.g. a 16oz container of strawberries)
 type ParsedContainerSize struct {
-	Size float32
-	Unit string // would prefer type-safe units, but we cannot guarnatee they'll be accurate
+	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	Size         float32
+	Unit         string
+	ParsedItemID uuid.UUID `gorm:"type:uuid,notNull"`
 }
 
 // ParsedItem a parsed line item from a receipt
 type ParsedItem struct {
-	UnitCost      float32
-	Qty           int
-	Weight        float32
-	TotalCost     float32
-	ContainerSize ParsedContainerSize
-	Name          string
+	ID              uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	UnitCost        float32
+	Qty             int
+	Weight          float32
+	TotalCost       float32 `gorm:"notNull"`
+	ContainerSize   ParsedContainerSize
+	Name            string    `gorm:"notNull"`
+	ParsedReceiptID uuid.UUID `gorm:"type:uuid;notNull"`
 }
 
 func (p ParsedItem) String() string {
@@ -47,8 +55,11 @@ func (p ParsedItem) String() string {
 
 // ParsedReceipt a fully parsed receipt
 type ParsedReceipt struct {
-	OriginalURL string
-	OrderNumber string
+	ID          uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	UserID      string    `gorm:"notNull"`
+	OriginalURL string    `gorm:"notNull"`
+	OrderNumber string    `gorm:"notNull"`
+	Timestamp   string    `gorm:"notNull"`
 	ParsedItems []ParsedItem
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes

@@ -1,2 +1,4 @@
+docker_data/pgdata
+
 # never check in actual passwords
 .env

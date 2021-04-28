@@ -3,6 +3,7 @@ package receipts
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"groceryspend.io/server/middleware"
@@ -15,7 +16,7 @@ import (
 func WebhookRoutes(route *gin.Engine, middleware *middleware.Context) {
 	router := route.Group("/receipts")
 
-	repo := NewMongoReceiptRepository()
+	repo := NewPostgresReceiptRepository()
 	userClient := users.NewDefaultClient()
 	categorizeClient := categorize.NewDefaultClient()
 
@@ -78,6 +79,14 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, userClie
 			})
 			return
 		}
+
+		receipt.OriginalURL = req.URL
+
+		// FIXME: this is wrong, it should be the parsed date and time delivery was made
+		receipt.Timestamp = req.Timestamp
+		splitURL := strings.Split(req.URL, "/")
+		receipt.OrderNumber = splitURL[len(splitURL)-1]
+		receipt.UserID = user.UserUUID.String()
 
 		id, err := repo.AddReceipt(receipt)
 		if err != nil {

@@ -1,12 +1,9 @@
 package receipts
 
 import (
-	"context"
-	"time"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"groceryspend.io/server/utils"
 )
 
@@ -16,68 +13,37 @@ type ReceiptRepository interface {
 	AddReceiptRequest(request UnparsedReceiptRequest) (string, error)
 }
 
-// MongoReceiptRepository is a MongoDB backed repository
-type MongoReceiptRepository struct {
-	Client *mongo.Client
+// PostgresReceiptRepository is an implementation of the receipt datastore using postgres
+type PostgresReceiptRepository struct {
+	DbConnection *gorm.DB
 }
 
-// NewMongoReceiptRepository create a new MongoReceiptRepository
-func NewMongoReceiptRepository() *MongoReceiptRepository {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// NewPostgresReceiptRepository creates a new PostgresUserRepo
+func NewPostgresReceiptRepository() *PostgresReceiptRepository {
+	dbConn, err := gorm.Open(postgres.Open(utils.GetOsValue("RECEIPTS_POSTGRES_CONN_STR")), &gorm.Config{})
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(utils.GetOsValue("RECEIPTS_MONGODB_URI")))
 	if err != nil {
-		panic("failed to connect to mongodb")
+		panic("failed to connect to postgres db for users")
 	}
 
-	// defer disconnect
-	// defer func() {
-	// 	if err = client.Disconnect(ctx); err != nil {
-	// 		panic(err)
-	// 	}
-	// }()
+	retval := PostgresReceiptRepository{DbConnection: dbConn}
 
-	retval := MongoReceiptRepository{Client: client}
-
-	// TODO: setup initialization of mongodb schema (databases, collections, etc)
+	// TODO: this should be a script that runs as a different user. That way, the user running queries only
+	//       has read/write but not create/delete permissions
+	dbConn.AutoMigrate(&ParsedReceipt{}, &ParsedItem{}, &ParsedContainerSize{}, &UnparsedReceiptRequest{})
 
 	return &retval
 }
 
-// AddReceipt add a receipt to the store
-func (r *MongoReceiptRepository) AddReceipt(receipt ParsedReceipt) (string, error) {
-	collection := r.Client.Database("receipts").Collection("parsed")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	res, err := collection.InsertOne(ctx, receipt)
-	if err != nil {
-		return "", err
-	}
-
-	// TODO: should we use vendor independent IDs (e.g. UUID) so that we could move
-	//			 from one service to another?
-	objectID := res.InsertedID.(primitive.ObjectID).String()
-	return objectID, nil
+// AddReceipt store parsed receipt to database
+func (r *PostgresReceiptRepository) AddReceipt(receipt ParsedReceipt) (string, error) {
+	r.DbConnection.Create(&receipt)
+	return receipt.ID.String(), nil
 
 }
 
-// AddReceiptRequest add a receipt request to the store
-func (r *MongoReceiptRepository) AddReceiptRequest(receipt UnparsedReceiptRequest) (string, error) {
-	collection := r.Client.Database("receipts").Collection("requests")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	res, err := collection.InsertOne(ctx, receipt)
-	if err != nil {
-		return "", err
-	}
-
-	// TODO: should we use vendor independent IDs (e.g. UUID) so that we could move
-	//			 from one service to another?
-	objectID := res.InsertedID.(primitive.ObjectID).String()
-	return objectID, nil
+// AddReceiptRequest store the receipt request in the database
+func (r *PostgresReceiptRepository) AddReceiptRequest(request UnparsedReceiptRequest) (string, error) {
+	r.DbConnection.Create(&request)
+	return request.ID.String(), nil
 }
