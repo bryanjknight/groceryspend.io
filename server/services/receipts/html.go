@@ -1,6 +1,8 @@
 package receipts
 
 import (
+	"regexp"
+
 	"golang.org/x/net/html"
 )
 
@@ -13,15 +15,15 @@ func checkTagName(n *html.Node, tagName string) bool {
 	return false
 }
 
-func traverseByTagName(n *html.Node, name string) []*html.Node {
+func traverse(n *html.Node, test func(*html.Node) bool) []*html.Node {
 	retval := []*html.Node{}
 
-	if checkTagName(n, name) {
+	if test(n) {
 		retval = append(retval, n)
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		result := traverseByTagName(c, name)
+		result := traverse(c, test)
 		if len(result) > 0 {
 			retval = append(retval, result...)
 		}
@@ -32,7 +34,16 @@ func traverseByTagName(n *html.Node, name string) []*html.Node {
 
 // GetElementsByTagName recurse through DOM to find nodes that match this tag name. Does not include self-closing tags
 func GetElementsByTagName(node *html.Node, tagName string) []*html.Node {
-	return traverseByTagName(node, tagName)
+
+	testFunc := func(n *html.Node) bool {
+		if n.Type == html.ElementNode {
+			if n.Data == tagName {
+				return true
+			}
+		}
+		return false
+	}
+	return traverse(node, testFunc)
 }
 
 // GetAttribute retrieve a node's attribute
@@ -73,4 +84,21 @@ func traverseByID(n *html.Node, id string) *html.Node {
 // GetElementByID find element by it's HTML ID
 func GetElementByID(n *html.Node, id string) *html.Node {
 	return traverseByID(n, id)
+}
+
+// GetElementByTextContent find the node with the specific tag name and has a value that matches the regular expression
+func GetElementByTextContent(node *html.Node, tagName string, re *regexp.Regexp) []*html.Node {
+	testFunc := func(n *html.Node) bool {
+		if n.Type == html.ElementNode && n.Data == tagName {
+
+			if n.FirstChild != nil && n.FirstChild.Type == html.TextNode && re.MatchString(n.FirstChild.Data) {
+				return true
+			}
+			return false
+
+		}
+		return false
+	}
+
+	return traverse(node, testFunc)
 }
