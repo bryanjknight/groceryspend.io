@@ -3,11 +3,15 @@ const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 
 const config = {
-  devtool: 'inline-source-map',
+  devtool: "inline-source-map",
   entry: {
     index: path.join(__dirname, "src/index.tsx"),
   },
-  output: { path: path.join(__dirname, "dist"), filename: "[name].js" },
+  output: {
+    path: path.join(__dirname, "dist"),
+    filename: "[name].js",
+    publicPath: "/",
+  },
   module: {
     rules: [
       {
@@ -65,6 +69,7 @@ const config = {
   devServer: {
     contentBase: "./dist",
     port: 3000,
+    historyApiFallback: true,
   },
   plugins: [
     new CopyPlugin({

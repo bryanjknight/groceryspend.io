@@ -2,7 +2,7 @@ import { useApi } from './use-api';
 import React from 'react';
 import { Loading } from './Loading';
 import { Error } from './Error';
-import { LinkProps, RouteComponentProps, RouteProps } from 'react-router-dom';
+import { RouteComponentProps } from 'react-router-dom';
 
 const PORT = 8080;
 
@@ -58,8 +58,8 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
     <table className="table">
       <thead>
         <tr>
-          <th scope="col">Date</th>
-          <th scope="col">Link</th>
+          <th scope="col">Item</th>
+          <th scope="col">Cost</th>
         </tr>
       </thead>
       <tbody>

@@ -1,15 +1,14 @@
-import React from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
-import { createBrowserHistory } from 'history';
-import { Route, Router, Switch } from 'react-router-dom';
-import './App.css';
-import { ProtectedRoute } from './ProtectedRoute';
-import { Nav } from './Nav';
-import { Error } from './Error';
-import { Loading } from './Loading';
-import { Receipts } from './Receipts';
-import { ReceiptDetails } from './ReceiptDetails';
-
+import React from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { createBrowserHistory } from "history";
+import { Route, Router, Switch } from "react-router-dom";
+import "./App.css";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { Nav } from "./Nav";
+import { Error } from "./Error";
+import { Loading } from "./Loading";
+import { Receipts } from "./Receipts";
+import { ReceiptDetails } from "./ReceiptDetails";
 
 // Use `createHashHistory` to use hash routing
 export const history = createBrowserHistory();
@@ -27,8 +26,8 @@ function App() {
       {error && <Error message={error.message} />}
       <Switch>
         <Route path="/" exact />
-        <ProtectedRoute path="/receipts" component={Receipts} />
-        <ProtectedRoute path="/receipt-details/:ID" component={ReceiptDetails} />
+        <ProtectedRoute exact path="/receipts" component={Receipts} />
+        <ProtectedRoute exact path="/receipts/:ID" component={ReceiptDetails} />
       </Switch>
     </Router>
   );

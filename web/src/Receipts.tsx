@@ -52,7 +52,7 @@ export function Receipts(): JSX.Element {
               <td>{receipt.OrderTimestamp}</td>
               <td><a href={receipt.OriginalURL}>Link to Original Order</a></td>
               <td><Link to={{
-                pathname: `/receipt-details/${receipt.ID}`,
+                pathname: `/receipts/${receipt.ID}`,
                 state: {
                   id: receipt.ID
                 }
