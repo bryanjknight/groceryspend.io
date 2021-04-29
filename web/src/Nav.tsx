@@ -30,6 +30,14 @@ export function Nav() {
           >
             Receipts
           </Link>
+          <Link
+            to="/analytics"
+            className={`nav-item nav-link${
+              pathname === '/analytics' ? ' active' : ''
+            }`}
+          >
+            Analytics
+          </Link>
         </div>
       </div>
 

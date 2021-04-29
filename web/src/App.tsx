@@ -9,6 +9,7 @@ import { Error } from "./Error";
 import { Loading } from "./Loading";
 import { Receipts } from "./Receipts";
 import { ReceiptDetails } from "./ReceiptDetails";
+import { Analytics } from "./Analytics"
 
 // Use `createHashHistory` to use hash routing
 export const history = createBrowserHistory();
@@ -28,6 +29,7 @@ function App() {
         <Route path="/" exact />
         <ProtectedRoute exact path="/receipts" component={Receipts} />
         <ProtectedRoute exact path="/receipts/:ID" component={ReceiptDetails} />
+        <ProtectedRoute exact path="/analytics" component={Analytics} />
       </Switch>
     </Router>
   );
