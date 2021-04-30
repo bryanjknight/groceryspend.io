@@ -13,7 +13,7 @@ export function Nav() {
 
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-light">
-      <span className="navbar-brand">@auth0/auth0-react</span>
+      <span className="navbar-brand">GrocerySpend.io</span>
       <div className="collapse navbar-collapse">
         <div className="navbar-nav">
           <Link

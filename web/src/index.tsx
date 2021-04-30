@@ -2,6 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App, { history } from './App';
 import { Auth0Provider, AppState } from '@auth0/auth0-react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+
 
 const onRedirectCallback = (appState: AppState) => {
   // If using a Hash Router, you need to use window.history.replaceState to
