@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useHistory, Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 
-export function Nav() {
+export function Nav(): JSX.Element {
   const { isAuthenticated, user, loginWithRedirect, logout } = useAuth0();
   const history = useHistory();
   const [pathname, setPathname] = useState(() => history.location.pathname);

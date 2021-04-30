@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import '../BaseChart.less'
 import { Doughnut } from "react-chartjs-2";
 import { AggregationDataRecord, filterDataRecords } from "..";

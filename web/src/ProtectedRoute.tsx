@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { withAuthenticationRequired } from "@auth0/auth0-react";
 import { Route } from "react-router-dom";
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const ProtectedRoute = ({
   component,
   ...args

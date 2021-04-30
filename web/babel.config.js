@@ -5,4 +5,9 @@ module.exports = {
     "@babel/preset-react",
   ],
   plugins: ["react-hot-loader/babel"],
+  // env: {
+  //   "test": {
+  //     "plugins": ["transform-es2015-modules-commonjs"]
+  //   }
+  // }
 };
