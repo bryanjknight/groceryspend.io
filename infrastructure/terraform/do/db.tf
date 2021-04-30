@@ -23,10 +23,20 @@ resource "digitalocean_database_firewall" "only_vpc_traffic_fw" {
 
 resource "digitalocean_database_db" "receipts" {
   cluster_id = digitalocean_database_cluster.postgres.id
+  name       = "receiptsdb"
+}
+
+resource "digitalocean_database_user" "receipts" {
+  cluster_id = digitalocean_database_cluster.postgres.id
   name       = "receipts"
 }
 
 resource "digitalocean_database_db" "users" {
+  cluster_id = digitalocean_database_cluster.postgres.id
+  name       = "usersdb"
+}
+
+resource "digitalocean_database_user" "users" {
   cluster_id = digitalocean_database_cluster.postgres.id
   name       = "users"
 }
