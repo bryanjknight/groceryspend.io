@@ -4,6 +4,9 @@
 			"path": "browser-extension"
 		},
 		{
+			"path": "infrastructure"
+		},
+		{
 			"path": "model-generation"
 		},
 		{
