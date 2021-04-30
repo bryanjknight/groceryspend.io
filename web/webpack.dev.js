@@ -11,7 +11,6 @@ module.exports = merge(common, {
     historyApiFallback: true,
   },
   resolve: {
-    extensions: [".js", ".jsx", ".tsx", ".ts"],
     alias: {
       "react-dom": "@hot-loader/react-dom",
     },

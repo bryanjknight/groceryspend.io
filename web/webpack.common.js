@@ -48,6 +48,9 @@ const config = {
       },
     ],
   },
+  resolve: {
+    extensions: [".js", ".jsx", ".tsx", ".ts"],
+  },
   plugins: [
     new CopyPlugin({
       patterns: [{ from: "public", to: "." }],

@@ -14,7 +14,7 @@ import Container from "react-bootstrap/Container";
 // Use `createHashHistory` to use hash routing
 export const history = createBrowserHistory();
 
-const App: React.FC = () => {
+const App = (): JSX.Element => {
   const { isLoading, error } = useAuth0();
 
   if (isLoading) {
