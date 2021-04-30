@@ -34,7 +34,7 @@ type UnparsedReceiptRequest struct {
 // ParsedContainerSize the size of an item's container (e.g. a 16oz container of strawberries)
 type ParsedContainerSize struct {
 	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	Size         float32
+	Size         float32   `gorm:"type:decimal(10,2)"`
 	Unit         string
 	ParsedItemID uuid.UUID `gorm:"type:uuid,notNull"`
 }
@@ -42,9 +42,9 @@ type ParsedContainerSize struct {
 // ParsedItem a parsed line item from a receipt
 type ParsedItem struct {
 	ID              uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	UnitCost        float32
+	UnitCost        float32   `gorm:"type:decimal(10,2)"`
 	Qty             int
-	Weight          float32
+	Weight          float32 `gorm:"type:decimal(10,2)"`
 	TotalCost       float32 `gorm:"notNull"`
 	ContainerSize   ParsedContainerSize
 	Name            string    `gorm:"notNull"`
@@ -66,11 +66,11 @@ type ParsedReceipt struct {
 	ParsedItems    []*ParsedItem
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes
-	SalesTax                 float32
-	Tip                      float32
-	ServiceFee               float32
-	DeliveryFee              float32
-	Discounts                float32
+	SalesTax                 float32   `gorm:"type:decimal(10,2)"`
+	Tip                      float32   `gorm:"type:decimal(10,2)"`
+	ServiceFee               float32   `gorm:"type:decimal(10,2)"`
+	DeliveryFee              float32   `gorm:"type:decimal(10,2)"`
+	Discounts                float32   `gorm:"type:decimal(10,2)"`
 	UnparsedReceiptRequestID uuid.UUID `gorm:"type:uuid"`
 }
 
