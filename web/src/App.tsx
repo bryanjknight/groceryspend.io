@@ -2,7 +2,6 @@ import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { createBrowserHistory } from "history";
 import { Route, Router, Switch } from "react-router-dom";
-import "./App.css";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { Nav } from "./Nav";
 import { Error } from "./Error";

@@ -3,7 +3,6 @@ const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 
 const config = {
-  devtool: "inline-source-map",
   entry: {
     index: path.join(__dirname, "src/index.tsx"),
   },
@@ -20,9 +19,8 @@ const config = {
         exclude: /node_modules/,
       },
       {
-        test: /\.css$/,
-        use: ["style-loader", "css-loader"],
-        exclude: /\.module\.css$/,
+        test: /\.less$/,
+        use: ["style-loader", "css-loader", "less-loader"],
       },
       {
         test: /\.ts(x)?$/,
@@ -59,17 +57,6 @@ const config = {
         ],
       },
     ],
-  },
-  resolve: {
-    extensions: [".js", ".jsx", ".tsx", ".ts"],
-    alias: {
-      "react-dom": "@hot-loader/react-dom",
-    },
-  },
-  devServer: {
-    contentBase: "./dist",
-    port: 3000,
-    historyApiFallback: true,
   },
   plugins: [
     new CopyPlugin({

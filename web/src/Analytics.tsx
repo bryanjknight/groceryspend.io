@@ -3,13 +3,13 @@ import { format, subMonths } from "date-fns";
 import React from "react";
 import { Loading } from "./Loading";
 import { Error } from "./Error";
-
+import { DonutChart } from "./components/charts";
 const PORT = 8080;
 
 // TODO: possible use for io-ts to verify response
 interface Aggregation {
   Category: string;
-  Value: string;
+  Value: number;
 }
 
 type AnalyticsResponse = Record<string, Aggregation[]>;
@@ -47,22 +47,14 @@ export function Analytics(): JSX.Element {
   return (
     <div>
       <p>Spend over the past month by Category</p>
-      <table className="table">
-        <thead>
-          <tr>
-            <th scope="col">Category</th>
-            <th scope="col">Spend</th>
-          </tr>
-        </thead>
-        <tbody>
-          {aggregations?.map((aggregation: Aggregation, i: number) => (
-            <tr key={aggregation.Category}>
-              <td>{aggregation.Category}</td>
-              <td>{aggregation.Value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div>
+        <DonutChart
+          data={aggregations.map((a) => [a.Category, a.Value])}
+          width={500}
+          height={500}
+          maxCategories={5}
+        />
+      </div>
     </div>
   );
 }
