@@ -4,13 +4,13 @@
 			"path": "browser-extension"
 		},
 		{
+			"path": "model-generation"
+		},
+		{
 			"path": "server"
 		},
 		{
 			"path": "web"
-		},
-		{
-			"path": "model-generation"
 		}
 	],
 	"settings": {
