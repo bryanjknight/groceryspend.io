@@ -11,6 +11,7 @@ resource "digitalocean_droplet" "bastion" {
     data.digitalocean_ssh_key.terraform.id
   ]
 
+  tags = [ "bastion" ]
   connection {
     host = self.ipv4_address
     user = "root"

@@ -11,6 +11,7 @@ resource "digitalocean_kubernetes_cluster" "groceryspend_test" {
     size       = "${var.k8s_worker_image}"
     node_count = 1
 
+    tags = [ "k8s" ]
     taint {
       key    = "workloadKind"
       value  = "database"
