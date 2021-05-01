@@ -1,0 +1,47 @@
+# One file for deploying the hello-world app
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # run within the app namespace
+  name: hello-world
+  namespace: app
+  labels:
+    app: hello-world
+spec:
+  replicas: 1 # only run one
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+      - name: hello
+        image: nginxdemos/hello
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-svc
+  namespace: app
+spec:
+  selector:
+    app: hello-world
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
