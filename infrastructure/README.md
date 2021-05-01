@@ -22,6 +22,8 @@ Things to automate:
 * `kubectl apply -f ./namespaces.yml`
 * `kubectl apply -f ./groceryspend/hello-world.yml`
 * `kubectl apply -f ./groceryspend/ingress.yml`
+* `helm repo add honeycomb https://honeycombio.github.io/helm-charts`
+* `helm install honeycomb honeycomb/honeycomb --set honeycomb.apiKey=API_KEY`
 Notes
 ---
 * IaC is not tied to a CICD pipeline as some minor changes result in the entire stack being torn down.
