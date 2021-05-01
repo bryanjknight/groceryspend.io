@@ -18,6 +18,10 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Install pipenv
+        working-directory: model-generation
+        run: pip install pipenv
+
       - name: Install dependencies
         working-directory: model-generation
         run: pipenv install
