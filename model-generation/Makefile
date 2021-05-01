@@ -5,7 +5,7 @@ ifeq ($(strip $(DOCKER_TAG)),)
 endif
 
 train:
-  PYTHONPATH=. python training/run.py
+  pipenv run train
 
 run:
 	pipenv run start
