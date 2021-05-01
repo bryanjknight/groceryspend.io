@@ -1,0 +1,33 @@
+name: Prediction Service CICD
+on: 
+  push:
+    paths:
+    - 'model-generation/**'
+  pull_request:
+    paths:
+    - 'model-generation/**'
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        working-directory: model-generation
+        run: pipenv install
+      
+      - name: Train model
+        working-directory: model-generation
+        run: make train
+
+      - name: Build Docker image
+        working-directory: model-generation
+        run: make build
+
+  
