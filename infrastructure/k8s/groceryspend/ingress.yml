@@ -1,14 +1,16 @@
+# TODO: v1beta1 deprecated in v1.22+
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
+  namespace: app
   name: ingress-hello-world-svc
   annotations:
     # use the shared ingress-nginx
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-  - http:
-      host: hello.groceryspend.io
+  - host: hello.groceryspend.io
+    http:
       paths:
       - path: /
         backend:
