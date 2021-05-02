@@ -1,9 +1,4 @@
-FROM python:3.9-slim-buster as base
-
-#
-# The intermediary image to install dependencies
-#
-FROM base as builder
+FROM python:3.7-slim-buster as builder
 
 # install pipenv
 RUN pip install pipenv
@@ -16,16 +11,8 @@ WORKDIR /install
 COPY Pipfile* /install
 
 # convert pipfile to requirements and install
-RUN pipenv lock -r > /requirements.txt \
-  && pip install --prefix=/install -r /requirements.txt
-
-#
-# The final image we'll deploy
-#
-FROM base
-
-# copy dependencies into final image
-COPY --from=builder /install /usr/local
+RUN pipenv lock -r > requirements.txt \
+  && pip install -r requirements.txt
 
 # HACK: six for some reason won't install via the builder image
 RUN pip install six
@@ -35,10 +22,25 @@ COPY training /src/training
 COPY web /src/web
 COPY output/categorize/model/ /data/models/categorize
 
+#
+# The final image we'll deploy
+#
+FROM gcr.io/distroless/python3
+
+# copy dependencies into final image
+COPY --from=builder /usr/local/lib/python3.7/site-packages/ \
+                  /usr/lib/python3.7/.
+
+# copy source data into final image
+COPY --from=builder /src /src
+
+# copy data into final image
+COPY --from=builder /data /data
+
 WORKDIR /src
 
 ENV CAT_MODEL=/data/models/categorize/categorize_tuple.pkl
 ENV FLASK_APP=web
 
-EXPOSE 5000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "web:app"]
+# EXPOSE 5000
+CMD ["-m", "gunicorn.app.wsgiapp", "--bind", "0.0.0.0:5000", "web:app"]

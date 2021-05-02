@@ -34,7 +34,7 @@ train = "python training/run.py"
 start = "gunicorn --bind 0.0.0.0:5000 web:app"
 
 [requires]
-python_version = "3.9"
+python_version = "3.7"
 
 [pipenv]
 allow_prereleases = true
