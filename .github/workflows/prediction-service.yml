@@ -34,6 +34,6 @@ jobs:
 
       - name: Build Docker image
         working-directory: model-generation
-        run: make build
+        run: DOCKER_TAG=$GITHUB_RUN_NUMBER make build
 
   

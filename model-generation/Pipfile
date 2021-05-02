@@ -30,7 +30,7 @@ seaborn = "*"
 lint = "pylint training"
 test = "python -m pytest -s"
 extract_pdf_txt = "python extract_pdf_txt.py"
-train = "PYTHONPATH=. python training/run.py"
+train = "python training/run.py"
 start = "gunicorn --bind 0.0.0.0:5000 web:app"
 
 [requires]
