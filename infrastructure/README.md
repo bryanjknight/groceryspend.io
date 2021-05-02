@@ -7,15 +7,19 @@ Manually Created Resources
 ---
 
 ### AWS
-* Domain name
+* Domain name registration
 
 ### DigitalOcean
 * Project
 * SSH Key
 * DNS records
+* K8S
+  * Maintenance window
+  * Burst control
 
 Tools
 ---
+- doctl: `brew install doctl`
 - Terraform: `brew tap hashicorp/tap && brew install hashicorp/tap/terraform`
 - kubectl `brew install kubernetes-cli`
 - helm `brew install helm`
@@ -35,6 +39,37 @@ Things to automate:
 * `kubectl apply -f ./groceryspend/ingress.yml`
 * `helm repo add honeycomb https://honeycombio.github.io/helm-charts`
 * `helm install honeycomb honeycomb/honeycomb --set honeycomb.apiKey=API_KEY`
+
+Docker deploy process w/ DigitalOcean
+---
+1. Install doctl and docker
+2. Authenticate with doctl with API token
+3. doctl registry login
+4. Build images
+5. Run the following:
+
+```
+docker tag predict:local registry.digitalocean.com/groceryspend/predict:local
+docker push registry.digitalocean.com/groceryspend/predict:local
+
+docker tag server:local registry.digitalocean.com/groceryspend/server:local
+docker push registry.digitalocean.com/groceryspend/server:local
+```
+
+Docker deploy process w/ Docker
+---
+1. Install docker
+2. Authenticate with docker
+4. Build images
+5. Run the following:
+
+```
+docker tag predict:local groceryspend/predict:local
+docker push groceryspend/predict:local
+
+docker tag server:local groceryspend/server:local
+docker push groceryspend/server:local
+```
 
 Notes
 ---
