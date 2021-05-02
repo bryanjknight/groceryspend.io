@@ -1,10 +1,14 @@
 
+# Determine the tag for the docker image
+ifeq ($(strip $(DOCKER_TAG)),)
+	DOCKER_TAG=local
+endif
+
 lint:
 	golint -set_exit_status ./...
 
 build:
-	# potentially use this for building a docker image
-	go build -v ./...
+	docker build -t server:$(DOCKER_TAG) .
 
 unit-test:
 	go test --cover -v ./...
@@ -16,4 +20,4 @@ run:
 clean:
 	rm -rf docker_data/pgdata/
 
-all: lint build unit-test
+all: lint unit-test build
