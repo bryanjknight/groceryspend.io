@@ -1,15 +1,15 @@
-resource "digitalocean_kubernetes_cluster" "groceryspend_test" {
-  name   = "groceryspend-test"
+resource "digitalocean_kubernetes_cluster" "groceryspend" {
+  name   = "groceryspend-${var.namespace}"
   region = "${var.region}"
   # Grab the latest version slug from `doctl kubernetes options versions`
-  version = "1.20.2-do.0"
+  version = "${var.k8s_version}"
 
-  vpc_uuid = digitalocean_vpc.staging.id
+  vpc_uuid = "${var.vpc_id}"
 
   node_pool {
     name       = "worker-pool"
     size       = "${var.k8s_worker_image}"
-    node_count = 1
+    node_count = "${var.k8s_node_count}"
 
     tags = [ "k8s" ]
     taint {
@@ -19,3 +19,4 @@ resource "digitalocean_kubernetes_cluster" "groceryspend_test" {
     }
   }
 }
+

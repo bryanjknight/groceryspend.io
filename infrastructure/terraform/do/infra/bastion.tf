@@ -4,11 +4,11 @@ resource "digitalocean_droplet" "bastion" {
   region = "${var.region}"
   size = "${var.droplet_image}"
   
-  vpc_uuid = digitalocean_vpc.staging.id
+  vpc_uuid = digitalocean_vpc.groceryspend-vpc.id
   private_networking = true
 
   ssh_keys = [
-    data.digitalocean_ssh_key.terraform.id
+    var.terraform_public_key
   ]
 
   tags = [ "bastion" ]
@@ -29,7 +29,7 @@ resource "digitalocean_droplet" "bastion" {
 }
 
 resource "digitalocean_project_resources" "bastion_groceryspend" {
-  project = data.digitalocean_project.groceryspend.id
+  project = var.project_id
   resources = [
     digitalocean_droplet.bastion.urn
   ]

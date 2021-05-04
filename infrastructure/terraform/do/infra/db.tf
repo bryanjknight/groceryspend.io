@@ -1,10 +1,11 @@
 resource "digitalocean_database_cluster" "postgres" {
-  name       = "postgres-cluster"
-  engine     = "pg"
-  version    = "12"
-  size       = "db-s-1vcpu-1gb"
-  region     = var.region
-  node_count = 1
+  name                 = "postgres-cluster"
+  engine               = "pg"
+  version              = "12"
+  size                 = "db-s-1vcpu-1gb"
+  region               = var.region
+  node_count           = 1
+  private_network_uuid = digitalocean_vpc.groceryspend-vpc.id
 }
 
 resource "digitalocean_database_firewall" "only_vpc_traffic_fw" {
