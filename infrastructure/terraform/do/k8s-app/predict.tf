@@ -50,7 +50,7 @@ resource "kubernetes_service" "predict" {
     }
 
     port {
-      port        = 5000
+      port        = 80
       target_port = 5000
     }
   }

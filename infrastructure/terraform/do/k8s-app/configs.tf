@@ -14,5 +14,6 @@ resource "kubernetes_config_map" "server-config" {
     AUTH_ALLOW_BROWSER_EXTENSIONS = "true"
     AUTH_MAX_AGE                  = "12h"
     CATEGORIZE_PATH               = "/categorize"
+    NO_LOAD_ENV_FILE              = "true"
   }
 }

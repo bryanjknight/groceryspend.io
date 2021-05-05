@@ -20,6 +20,7 @@ resource "kubernetes_deployment" "server" {
         container {
           image = "groceryspend/server:local"
           name  = "server"
+          termination_message_policy = "FallbackToLogsOnError"
           port {
             container_port = 8080
           }
@@ -27,9 +28,15 @@ resource "kubernetes_deployment" "server" {
             secret_ref {
               name = "server-auth"
             }
+          }
+          env_from {
             config_map_ref {
               name = "server-config"
             }
+          }
+          env {
+            name = "CATEGORIZE_HOST"
+            value = kubernetes_service.predict.metadata[0].name
           }
           resources {
             limits = {
