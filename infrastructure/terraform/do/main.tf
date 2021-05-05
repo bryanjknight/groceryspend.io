@@ -41,7 +41,7 @@ module "k8s-app" {
   pg_port                       = module.infra.postgres_port
 }
 
-module "domain" {
-  source = "./domain"
-  load_balancer_ip = module.k8s-app.load_balancer_ip
-}
+# module "domain" {
+#   source = "./domain"
+#   load_balancer_ip = module.k8s-app.load_balancer_ip
+# }
