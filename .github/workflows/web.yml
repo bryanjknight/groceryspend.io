@@ -1,11 +1,11 @@
-name: Web CICD
+name: Web Portal CICD
 on: 
   push:
     paths:
-    - 'web/**'
+    - 'web-portal/**'
   pull_request:
     paths:
-    - 'web/**'
+    - 'web-portal/**'
     
 jobs:
   build:
@@ -19,17 +19,17 @@ jobs:
           node-version: '14'
 
       - name: Install dependences
-        working-directory: web
+        working-directory: web-portal
         run: npm install
 
-      - name: Build web
-        working-directory: web
+      - name: Build web-portal
+        working-directory: web-portal
         run: npm run build
 
       - name: Run unit tests
-        working-directory: web
+        working-directory: web-portal
         run: npm run test
   
       - name: Run code coverage
-        working-directory: web
+        working-directory: web-portal
         run: npm run test:coverage
