@@ -4,8 +4,6 @@ import { Loading } from './Loading';
 import { Error } from './Error';
 import { RouteComponentProps } from 'react-router-dom';
 
-const PORT = 8080;
-
 // TODO: possible use for io-ts to verify response
 
 interface Item {
@@ -35,7 +33,7 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
   const params = props.match.params;
   const receiptID = "ID" in params ? params["ID"] : "";
   const { loading, error, data: resp = {} as ReceiptsResponse} = useApi(
-    `http://localhost:${PORT}/receipts/${receiptID}`,
+    `${process.env.API_URL}/receipts/${receiptID}`,
     {
       audience: "https://bknight.dev.groceryspend.io",
       scope: 'read:users',

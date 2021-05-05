@@ -4,7 +4,6 @@ import React from "react";
 import { Loading } from "./Loading";
 import { Error } from "./Error";
 import { DonutChart } from "./components/charts";
-const PORT = 8080;
 
 // TODO: possible use for io-ts to verify response
 interface Aggregation {
@@ -25,9 +24,9 @@ export function Analytics(): JSX.Element {
   const queryParams = new URLSearchParams(queryParamsObj);
 
   const { loading, error, data: resp = {} as AnalyticsResponse } = useApi(
-    `http://localhost:${PORT}/analytics/spend-by-category?${queryParams.toString()}`,
+    `${process.env.API_URL}/analytics/spend-by-category?${queryParams.toString()}`,
     {
-      audience: "https://bknight.dev.groceryspend.io",
+      audience: process.env.REACT_APP_AUDIENCE,
       scope: "read:users",
       mode: "cors",
       credentials: "include",

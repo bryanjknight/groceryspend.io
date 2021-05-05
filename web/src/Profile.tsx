@@ -7,7 +7,7 @@ const Profile = (): JSX.Element | boolean => {
 
   useEffect(() => {
     const getUserMetadata = async () => {
-      const domain = "groceryspend-dev.us.auth0.com";
+      const domain = process.env.REACT_APP_DOMAIN || "domain-not-found";
 
       try {
         const accessToken = await getAccessTokenSilently({
