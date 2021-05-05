@@ -60,6 +60,8 @@ resource "kubernetes_service" "server" {
     namespace = kubernetes_namespace.app.metadata.0.name
   }
   spec {
+    type = "ClusterIP"
+
     selector = {
       app = kubernetes_deployment.server.metadata.0.name
     }

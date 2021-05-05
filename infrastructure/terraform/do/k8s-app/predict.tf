@@ -45,6 +45,8 @@ resource "kubernetes_service" "predict" {
     namespace = kubernetes_namespace.app.metadata.0.name
   }
   spec {
+    type = "ClusterIP"
+
     selector = {
       app = kubernetes_deployment.predict.metadata.0.name
     }
