@@ -12,11 +12,13 @@ resource "digitalocean_kubernetes_cluster" "groceryspend" {
     node_count = "${var.k8s_node_count}"
 
     tags = [ "k8s" ]
-    taint {
-      key    = "workloadKind"
-      value  = "database"
-      effect = "NoSchedule"
-    }
+
+    # TODO: need to be careful with taints, particularly how to flag pods to allow/disallow running on nodes
+    # taint {
+    #   key    = "workloadKind"
+    #   value  = "database"
+    #   effect = "NoSchedule"
+    # }
   }
 }
 

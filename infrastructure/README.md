@@ -79,3 +79,7 @@ Notes
 To Do
 ---
 - [ ] Playbook for making incremental changes in UI, then capturing within Terraform config
+
+References
+---
+- [Securing K8s](https://www.digitalocean.com/community/tutorials/recommended-steps-to-secure-a-digitalocean-kubernetes-cluster) to better secure it
