@@ -33,3 +33,9 @@ jobs:
       - name: Run code coverage
         working-directory: web-portal
         run: npm run test:coverage
+
+      - name: Dockerize
+        working-directory: web-portal
+        run: docker build -t web-portal:local .
+
+      # TODO: deploy to container registry, rollout on k8s
