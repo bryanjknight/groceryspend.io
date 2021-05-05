@@ -5,3 +5,6 @@
 output/
 *.pyc
 notebooks/.ipynb_checkpoints
+
+# we'll use Pipfile for the source of dependencies
+requirements.txt
