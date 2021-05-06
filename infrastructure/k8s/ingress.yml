@@ -23,7 +23,7 @@ spec:
           service:
             name: server-svc
             port:
-              number: 5000
+              number: 8080
   - host: portal.groceryspend.io
     http:
       paths:
