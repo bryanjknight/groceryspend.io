@@ -3,9 +3,11 @@ on:
   push:
     paths:
     - 'web-portal/**'
+    - '.github/workflows/web-portal.yml'
   pull_request:
     paths:
     - 'web-portal/**'
+    - '.github/workflows/web-portal.yml'
     
 jobs:
   build:
