@@ -38,7 +38,8 @@ spec:
     spec:
       containers:
       - name: server
-        image: groceryspend/server:local
+        # <IMAGE> is replaced by a docker uri and tag by the CICD process
+        image: <IMAGE>
         ports:
         - containerPort: 8080
         envFrom:

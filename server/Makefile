@@ -20,4 +20,8 @@ run:
 clean:
 	rm -rf docker_data/pgdata/
 
+push:
+	docker tag server:$(DOCKER_TAG) groceryspend/server:$(DOCKER_TAG)
+	docker push groceryspend/server:$(DOCKER_TAG)
+
 all: lint unit-test build

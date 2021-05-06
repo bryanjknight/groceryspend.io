@@ -6,6 +6,7 @@ ADD . /go/src/app
 
 RUN go get -d -v ./...
 
+ENV GIN_MODE=release
 RUN go build -o /go/bin/app
 
 # Now copy it into our base image.

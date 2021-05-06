@@ -3,9 +3,11 @@ on:
   push:
     paths:
     - 'server/**'
+    - '.github/workflows/server.yml'
   pull_request:
     paths:
     - 'server/**'
+    - '.github/workflows/server.yml'
     
 jobs:
   build:
@@ -13,16 +15,52 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Generate Env vars
+        id: env-vars
+        run: |
+          echo ::set-output name=sha::$(git rev-parse --short=7 ${{ github.sha }})
+          echo ::set-output name=deployment::$GITHUB_WORKSPACE/infrastructure/k8s/server-deploy.yml
+
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
-      
-      - name: Build server
-        working-directory: server
-        run: make build
 
       - name: Run unit tests
         working-directory: server
         run: make unit-test
-  
+
+      - name: Dockerize
+        working-directory: server
+        run: make build
+        env:
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
+
+      - name: Log into Docker Hub
+        working-directory: server
+        run: echo $DOCKER_PASS | docker login --username bknight1983 --password-stdin
+        env:
+          DOCKER_PASS: ${{ secrets.DOCKER_HUB_API_TOKEN }}
+
+      - name: Push to Docker Hub
+        working-directory: server
+        run: make push
+        env:
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
+        
+      - name: Update deployment file
+        run: sed -i 's|<IMAGE>|groceryspend/server:'${DOCKER_TAG}'|' ${{ steps.env-vars.outputs.deployment }}
+        env:
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
+
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 $K8S_CLUSTER
+        env:
+          # TODO: inject environment-specific k8s cluster
+          K8S_CLUSTER: groceryspend-default
+
+      - name: Deploy to DigitalOcean Kubernetes
+        run: kubectl apply -f ${{ steps.env-vars.outputs.deployment }}
+
+      - name: Verify deployment
+        run: kubectl rollout status deployment/server -n app
