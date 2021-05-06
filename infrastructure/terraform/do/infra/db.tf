@@ -9,30 +9,46 @@ resource "digitalocean_database_cluster" "postgres" {
 }
 
 resource "digitalocean_database_db" "receipts" {
+  depends_on = [
+    digitalocean_database_cluster.postgres
+  ]
+
   cluster_id = digitalocean_database_cluster.postgres.id
   name       = "receiptsdb"
 }
 
 resource "digitalocean_database_user" "receipts" {
+  depends_on = [
+    digitalocean_database_cluster.postgres
+  ]
+
   cluster_id = digitalocean_database_cluster.postgres.id
   name       = "receipts"
 }
 
 resource "digitalocean_database_db" "users" {
+  depends_on = [
+    digitalocean_database_cluster.postgres
+  ]
+
   cluster_id = digitalocean_database_cluster.postgres.id
   name       = "usersdb"
 }
 
 resource "digitalocean_database_user" "users" {
+  depends_on = [
+    digitalocean_database_cluster.postgres
+  ]
+
   cluster_id = digitalocean_database_cluster.postgres.id
   name       = "users"
 }
 
 resource "null_resource" "setup_db" {
   depends_on = [
-    digitalocean_database_db.receipts, 
-    digitalocean_database_db.users, 
-    digitalocean_database_user.receipts, 
+    digitalocean_database_db.receipts,
+    digitalocean_database_db.users,
+    digitalocean_database_user.receipts,
     digitalocean_database_user.users
   ]
   # setup receiptsdb and receipts
