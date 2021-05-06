@@ -19,6 +19,7 @@ spec:
     spec:
       containers:
       - name: web-portal
+        # <IMAGE> is replaced by a docker uri and tag by the CICD process
         image: <IMAGE>
         ports:
         - containerPort: 80

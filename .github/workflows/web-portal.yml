@@ -10,7 +10,7 @@ on:
     - '.github/workflows/web-portal.yml'
     
 jobs:
-  build:
+  build-test-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -71,8 +71,10 @@ jobs:
           DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
-        # TODO: inject environment-specific k8s cluster
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 groceryspend-default
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 $K8S_CLUSTER
+        env:
+          # TODO: inject environment-specific k8s cluster
+          K8S_CLUSTER: groceryspend-default
 
       - name: Deploy to DigitalOcean Kubernetes
         run: kubectl apply -f ${{ steps.env-vars.outputs.deployment }}
