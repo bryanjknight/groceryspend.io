@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # run within the app namespace
+  name: web-portal
+  namespace: app
+  labels:
+    app: web-portal
+spec:
+  replicas: 1 # only run one
+  selector:
+    matchLabels:
+      app: web-portal
+  template:
+    metadata:
+      labels:
+        app: web-portal
+    spec:
+      containers:
+      - name: web-portal
+        image: groceryspend/web-portal:local
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64M"
+            cpu: "10m"
+          limits:
+            memory: "512M"
+            cpu: "50m"

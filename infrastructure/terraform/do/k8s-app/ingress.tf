@@ -23,35 +23,7 @@ resource "helm_release" "nginx_ingress" {
   }
     set {
     name = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/do-loadbalancer-name"
-    value = "groceryspend.io"
+    value = "main-lb"
   }
 
-}
-
-# then create the ingress itself
-resource "kubernetes_ingress" "groceryspend_ingress" {
-  wait_for_load_balancer = true
-  metadata {
-    name = "ingress"
-    namespace  = kubernetes_namespace.app.metadata.0.name
-    annotations = {
-      "kubernetes.io/ingress.class" = "nginx"
-    }
-  }
-
-  spec {
-    rule {
-      host = "www.groceryspend.io"
-      http {
-        path {
-          backend {
-            service_name = kubernetes_service.server.metadata.0.name
-            service_port = 8080
-          }
-
-          path = "/"
-        }
-      }
-    }
-  }
 }
