@@ -6,7 +6,7 @@ metadata:
   namespace: app
 data:
   AUTH_PROVIDER: "AUTH0"
-  AUTH_ALLOW_ORIGINS: "http://localhost:3000 chrome-extension://gpmoghmaibomfddfbofkionknjjeoaef"
+  AUTH_ALLOW_ORIGINS: "https://www.groceryspend.io https://portal.groceryspend.io chrome-extension://gpmoghmaibomfddfbofkionknjjeoaef"
   AUTH_ALLOW_METHODS: "GET PUT POST DELETE PATCH OPTIONS"
   AUTH_ALLOW_HEADERS: "* Authorization"
   AUTH_EXPOSE_HEADERS: "*"
