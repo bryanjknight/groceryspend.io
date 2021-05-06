@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: web-portal
-        image: groceryspend/web-portal:local
+        image: <IMAGE>
         ports:
         - containerPort: 80
         resources:

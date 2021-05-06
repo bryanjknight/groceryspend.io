@@ -15,10 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
       - name: Generate Env vars
         id: env-vars
         run: |
           echo ::set-output name=sha::$(git rev-parse --short=7 ${{ github.sha }})
+          echo ::set-output name=deployment::$GITHUB_WORKSPACE/infrastructure/k8s/web-portal-deploy.yml
 
       - name: Set up node
         uses: actions/setup-node@v2
@@ -59,5 +65,17 @@ jobs:
         env:
           DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
         
+      - name: Update deployment file
+        run: sed -i 's|<IMAGE>|groceryspend/web-portal:'${DOCKER_TAG}'|' ${{ steps.env-vars.outputs.deployment }}
+        env:
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
 
-      # TODO: rollout on k8s
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        # TODO: inject environment-specific k8s cluster
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 groceryspend-default
+
+      - name: Deploy to DigitalOcean Kubernetes
+        run: kubectl apply -f ${{ steps.env-vars.outputs.deployment }}
+
+      - name: Verify deployment
+        run: kubectl rollout status deployment/web-portal
