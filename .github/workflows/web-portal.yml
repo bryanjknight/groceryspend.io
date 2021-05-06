@@ -36,6 +36,21 @@ jobs:
 
       - name: Dockerize
         working-directory: web-portal
-        run: docker build -t web-portal:local .
+        run: make build
+        env:
+          DOCKER_TAG: ${{ github.run_number }}
 
-      # TODO: deploy to container registry, rollout on k8s
+      - name: Log into Docker Hub
+        working-directory: web-portal
+        run: echo $DOCKER_PASS | docker login --username bknight1983 --password-stdin
+        env:
+          DOCKER_PASS: ${{ secrets.DOCKER_HUB_API_TOKEN }}
+
+      - name: Push to Docker Hub
+        working-directory: web-portal
+        run: make push
+        env:
+          DOCKER_TAG: ${{ github.run_number }}
+        
+
+      # TODO: rollout on k8s
