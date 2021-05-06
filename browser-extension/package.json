@@ -13,12 +13,12 @@
     "url-parse": "^1.5.1"
   },
   "scripts": {
-    "build": "webpack --mode=production",
-    "prepare": "cd .. && husky install browser-extension/.husky",
+    "build": "webpack --config webpack.prod.js",
     "lint": "eslint ./src/**/*.{ts,tsx}",
+    "prepare": "cd .. && husky install browser-extension/.husky",    
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "watch": "webpack --watch --mode=development"
+    "watch": "webpack --watch --config webpack.dev.js"
   },
   "browserslist": {
     "production": [
@@ -80,7 +80,8 @@
     "webextension-polyfill": "^0.7.0",
     "webpack": "^5.30.0",
     "webpack-cli": "^4.6.0",
-    "webpack-extension-reloader": "^1.1.4"
+    "webpack-extension-reloader": "^1.1.4",
+    "webpack-merge": "^5.7.3"
   },
   "husky": {},
   "lint-staged": {

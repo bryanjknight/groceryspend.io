@@ -23,6 +23,7 @@
     "notifications",
     "storage",
     "http://localhost:8080/",
+    "https://api.groceryspend.io/",
     "https://*.auth0.com/*"
   ], 
   "key": "gphmemfooelbfnnlnjegjofkkabhebek"

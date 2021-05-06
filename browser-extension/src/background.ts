@@ -87,9 +87,8 @@ browser.runtime.onMessage.addListener(
             throw new Error("No bearer token available");
           }
 
-          // TODO: externalize this to process.env or an options page
           return useApi(
-            "http://localhost:8080/receipts/receipt",
+            `${process.env.API_URL}/receipts/receipt`,
             {
               accessToken: token,
               method: "POST",

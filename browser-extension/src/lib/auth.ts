@@ -8,10 +8,9 @@ const browser = getBrowserInstance();
 
 const redirectUri = browser.identity.getRedirectURL();
 
-// TODO: extract these from process.env
-const domain = "https://groceryspend-dev.us.auth0.com";
-const clientId = "tonoXWFW9VLF9FHkzNxiUULKtibDkTuf";
-const audience = "https://bknight.dev.groceryspend.io";
+const domain = process.env.REACT_APP_DOMAIN || "unknown-domain";
+const clientId = process.env.REACT_APP_CLIENT_ID || "unknown-client-id";
+const audience = process.env.REACT_APP_AUDIENCE || "unknown-audience";
 const permissions = ["openid", "profile"];
 
 const scope = permissions.join("%20");
@@ -127,13 +126,4 @@ export const getUserProfile = async (token: string): Promise<UserInfo> => {
       name: "TBD",
     };
   });
-};
-
-export const logout = (token: string) => {
-  // build out logout URL
-
-  // fetch
-
-  // run callback (or make this a promise)
-  throw new Error("Do something");
 };

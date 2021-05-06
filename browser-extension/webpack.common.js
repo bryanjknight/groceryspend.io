@@ -61,17 +61,11 @@ const config = {
   },
   resolve: {
     extensions: [".js", ".jsx", ".tsx", ".ts"],
-    alias: {
-      "react-dom": "@hot-loader/react-dom",
-    },
     fallback: {
       crypto: require.resolve("crypto-browserify"),
       buffer: require.resolve("buffer/"),
       stream: require.resolve("stream-browserify"),
     }
-  },
-  devServer: {
-    contentBase: "./dist",
   },
   plugins: [
     new CopyPlugin({
