@@ -4,11 +4,12 @@ on:
     paths:
     - 'web-portal/**'
     - '.github/workflows/web-portal.yml'
+    - 'infrastructure/k8s/web-portal-deploy.yml'
   pull_request:
     paths:
     - 'web-portal/**'
     - '.github/workflows/web-portal.yml'
-    
+    - 'infrastructure/k8s/web-portal-deploy.yml'
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
