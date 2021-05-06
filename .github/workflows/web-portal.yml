@@ -13,6 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Generate Env vars
+        id: env-vars
+        run: |
+          echo ::set-output name=sha::$(git rev-parse --short=7 ${{ github.sha }})
+
       - name: Set up node
         uses: actions/setup-node@v2
         with:
@@ -38,7 +43,7 @@ jobs:
         working-directory: web-portal
         run: make build
         env:
-          DOCKER_TAG: ${{ github.run_number }}
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
 
       - name: Log into Docker Hub
         working-directory: web-portal
@@ -50,7 +55,7 @@ jobs:
         working-directory: web-portal
         run: make push
         env:
-          DOCKER_TAG: ${{ github.run_number }}
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
         
 
       # TODO: rollout on k8s
