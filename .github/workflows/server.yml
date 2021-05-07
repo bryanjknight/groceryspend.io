@@ -27,6 +27,7 @@ jobs:
         run: |
           echo ::set-output name=sha::$(git rev-parse --short=7 ${{ github.sha }})
           echo ::set-output name=deployment::$GITHUB_WORKSPACE/infrastructure/k8s/server-deploy.yml
+          echo ::set-output name=run_deploy::FALSE
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -59,15 +60,19 @@ jobs:
         run: sed -i 's|<IMAGE>|groceryspend/server:'${DOCKER_TAG}'|' ${{ steps.env-vars.outputs.deployment }}
         env:
           DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
+        if: ${{ steps.env-vars.outputs.run_deploy == "TRUE" }}
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 $K8S_CLUSTER
         env:
           # TODO: inject environment-specific k8s cluster
           K8S_CLUSTER: groceryspend-default
+        if: ${{ steps.env-vars.outputs.run_deploy == "TRUE" }}  
 
       - name: Deploy to DigitalOcean Kubernetes
         run: kubectl apply -f ${{ steps.env-vars.outputs.deployment }}
+        if: ${{ steps.env-vars.outputs.run_deploy == "TRUE" }}
 
       - name: Verify deployment
         run: kubectl rollout status deployment/server -n app
+        if: ${{ steps.env-vars.outputs.run_deploy == "TRUE" }}
