@@ -1,0 +1,4 @@
+baseURL = "https://www.groceryspend.io/"
+languageCode = "en-us"
+title = "GrocerySpend.io"
+theme = ["github.com/theNewDynamic/gohugo-theme-ananke"]
