@@ -1,9 +1,11 @@
 ---
-title: "How did I spend $200 at the grocery store?"
-featured_image: '/images/gohugo-default-sample-hero-image.jpg'
+title: "It's Mint™️, for your groceries"
+featured_image: '/images/hero/produce.jpg'
 description: "Dig into those receipts to understand where your money is going"
 ---
 GrocerySpend.io quickly analyzes your grocery receipts to provide insights on:
-- what products you spend the most on
-- how your purchases affect your health
-- how your purchases affect the planet
+- What products you spend the most on
+- How your purchases affect your health
+- How your purchases affect the planet
+
+[Sign up for updates](http://eepurl.com/hx1nLz)
