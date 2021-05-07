@@ -1,5 +1,5 @@
 {
-  "name": "portal",
+  "name": "@groceryspend/web-portal",
   "version": "0.0.1",
   "private": true,
   "dependencies": {
@@ -17,7 +17,7 @@
     "build": "webpack --config webpack.prod.js",
     "clean": "rm -rf dist/",
     "lint": "eslint ./src/**/*.{ts,tsx}",
-    "prepare": "cd .. && husky install browser-extension/.husky",
+    "prepare": "cd .. && husky install web-portal/.husky",
     "start": "webpack serve  --open --config webpack.dev.js",
     "test": "jest",
     "test:coverage": "jest --coverage"
