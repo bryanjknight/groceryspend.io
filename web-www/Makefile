@@ -10,3 +10,6 @@ build:
 docker:
 	docker build -t web-www:$(DOCKER_TAG) .
 
+push:
+	docker tag web-www:$(DOCKER_TAG) groceryspend/web-www:$(DOCKER_TAG)
+	docker push groceryspend/web-www:$(DOCKER_TAG)
