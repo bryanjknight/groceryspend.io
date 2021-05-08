@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # run within the app namespace
+  name: web-www
+  namespace: app
+  labels:
+    app: web-www
+spec:
+  replicas: 1 # only run one
+  selector:
+    matchLabels:
+      app: web-www
+  template:
+    metadata:
+      labels:
+        app: web-www
+    spec:
+      containers:
+      - name: web-www
+        # <IMAGE> is replaced by a docker uri and tag by the CICD process
+        image: <IMAGE>
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64M"
+            cpu: "10m"
+          limits:
+            memory: "512M"
+            cpu: "50m"

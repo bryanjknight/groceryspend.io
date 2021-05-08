@@ -10,7 +10,7 @@ metadata:
 spec:
   defaultBackend:
     service:
-      name: web-portal-svc
+      name: web-www-svc
       port:
         number: 80
   rules:

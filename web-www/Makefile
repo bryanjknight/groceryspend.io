@@ -5,7 +5,7 @@ ifeq ($(strip $(DOCKER_TAG)),)
 endif
 
 build:
-	hugo
+	hugo --minify
 
 docker:
 	docker build -t web-www:$(DOCKER_TAG) .

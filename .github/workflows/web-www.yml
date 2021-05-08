@@ -1,0 +1,77 @@
+name: Web WWW CICD
+on: 
+  push:
+    paths:
+    - 'web-www/**'
+    - '.github/workflows/web-www.yml'
+    - 'infrastructure/k8s/web-www-deploy.yml'
+  pull_request:
+    paths:
+    - 'web-www/**'
+    - '.github/workflows/web-www.yml'
+    - 'infrastructure/k8s/web-www-deploy.yml'
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Generate Env vars
+        id: env-vars
+        run: |
+          echo ::set-output name=sha::$(git rev-parse --short=7 ${{ github.sha }})
+          echo ::set-output name=deployment::$GITHUB_WORKSPACE/infrastructure/k8s/web-www-deploy.yml
+          echo ::set-output name=run_deploy::FALSE
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: '0.81.0'
+
+      - name: Build web-www
+        working-directory: web-www
+        run: make build
+
+      - name: Dockerize
+        working-directory: web-www
+        run: make docker
+        env:
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
+
+      - name: Log into Docker Hub
+        working-directory: web-www
+        run: echo $DOCKER_PASS | docker login --username bknight1983 --password-stdin
+        env:
+          DOCKER_PASS: ${{ secrets.DOCKER_HUB_API_TOKEN }}
+
+      - name: Push to Docker Hub
+        working-directory: web-www
+        run: make push
+        env:
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
+        
+      - name: Update deployment file
+        run: sed -i 's|<IMAGE>|groceryspend/web-www:'${DOCKER_TAG}'|' ${{ steps.env-vars.outputs.deployment }}
+        env:
+          DOCKER_TAG: ${{ steps.env-vars.outputs.sha }}
+        if: ${{ steps.env-vars.outputs.run_deploy == 'TRUE' }}    
+
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 $K8S_CLUSTER
+        env:
+          # TODO: inject environment-specific k8s cluster
+          K8S_CLUSTER: groceryspend-default
+        if: ${{ steps.env-vars.outputs.run_deploy == 'TRUE' }}  
+
+      - name: Deploy to DigitalOcean Kubernetes
+        run: kubectl apply -f ${{ steps.env-vars.outputs.deployment }}
+        if: ${{ steps.env-vars.outputs.run_deploy == 'TRUE' }}  
+
+      - name: Verify deployment
+        run: kubectl rollout status deployment/web-www -n app
+        if: ${{ steps.env-vars.outputs.run_deploy == 'TRUE' }}  
