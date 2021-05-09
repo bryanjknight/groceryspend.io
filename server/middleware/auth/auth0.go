@@ -161,5 +161,5 @@ func (m *Auth0JwtAuthMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
 		return uuid.Nil
 	}
 
-	return canonicalUser.UserUUID
+	return canonicalUser.ID
 }

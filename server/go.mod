@@ -16,7 +16,7 @@ require (
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/kofalt/go-memoize v0.0.0-20200917044458-9b55a8d73e1c
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/lib/pq v1.10.0 // indirect
+	github.com/lib/pq v1.10.1
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/ugorji/go v1.2.5 // indirect
