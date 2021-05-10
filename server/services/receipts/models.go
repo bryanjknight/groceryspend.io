@@ -1,7 +1,6 @@
 package receipts
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -24,71 +23,40 @@ func ParseStringToUSDAmount(s string) (float32, error) {
 
 // UnparsedReceiptRequest a request to parse a receipt
 type UnparsedReceiptRequest struct {
-	ID               uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	OriginalURL      string    `gorm:"notNull"`
-	RequestTimestamp time.Time `gorm:"notNull"`
-	RawHTML          string    `gorm:"notNull"`
-	ParsedReceipt    ParsedReceipt
-}
-
-// ParsedContainerSize the size of an item's container (e.g. a 16oz container of strawberries)
-type ParsedContainerSize struct {
-	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	Size         float32   `gorm:"type:decimal(10,2)"`
-	Unit         string
-	ParsedItemID uuid.UUID `gorm:"type:uuid,notNull"`
+	ID               uuid.UUID
+	UserUUID         uuid.UUID `db:"user_uuid"`
+	OriginalURL      string    `db:"original_url"`
+	RequestTimestamp time.Time `db:"request_timestamp"`
+	RawHTML          string    `db:"raw_html"`
+	ParsedReceipt    *ParsedReceipt
 }
 
 // ParsedItem a parsed line item from a receipt
 type ParsedItem struct {
-	ID              uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	UnitCost        float32   `gorm:"type:decimal(10,2)"`
+	ID              uuid.UUID
+	UnitCost        float32 `db:"unit_cost"`
 	Qty             int
-	Weight          float32 `gorm:"type:decimal(10,2)"`
-	TotalCost       float32 `gorm:"notNull"`
-	ContainerSize   ParsedContainerSize
-	Name            string    `gorm:"notNull"`
-	ParsedReceiptID uuid.UUID `gorm:"type:uuid;notNull"`
-	Category        string    `gorm:"notNull"`
-}
-
-func (p ParsedItem) String() string {
-	return fmt.Sprintf("%v: %v", p.Name, p.TotalCost)
+	Weight          float32
+	TotalCost       float32 `db:"total_cost"`
+	Name            string
+	ParsedReceiptID uuid.UUID `db:"parsed_receipt_id"`
+	Category        string
+	ContainerSize   float32 `db:"container_size"`
+	ContainerUnit   string  `db:"container_unit"`
 }
 
 // ParsedReceipt a fully parsed receipt
 type ParsedReceipt struct {
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	UserID         uuid.UUID `gorm:"type:uuid"`
-	OriginalURL    string    `gorm:"notNull;uniqueIndex:original_url_idx"`
-	OrderNumber    string    `gorm:"notNull"`
-	OrderTimestamp time.Time `gorm:"notNull"`
+	ID             uuid.UUID
+	OrderNumber    string    `db:"order_number"`
+	OrderTimestamp time.Time `db:"order_timestamp"`
 	ParsedItems    []*ParsedItem
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes
-	SalesTax                 float32   `gorm:"type:decimal(10,2)"`
-	Tip                      float32   `gorm:"type:decimal(10,2)"`
-	ServiceFee               float32   `gorm:"type:decimal(10,2)"`
-	DeliveryFee              float32   `gorm:"type:decimal(10,2)"`
-	Discounts                float32   `gorm:"type:decimal(10,2)"`
-	UnparsedReceiptRequestID uuid.UUID `gorm:"type:uuid"`
-}
-
-func (p ParsedReceipt) String() string {
-
-	builder := strings.Builder{}
-
-	builder.WriteString("Items:\n=====\n")
-	for _, item := range p.ParsedItems {
-		builder.WriteString(fmt.Sprintf("%v\n", item))
-	}
-
-	builder.WriteString("=====\n")
-	builder.WriteString(fmt.Sprintf("Delivery Fee: %v\n", p.DeliveryFee))
-	builder.WriteString(fmt.Sprintf("Service Fee: %v\n", p.ServiceFee))
-	builder.WriteString(fmt.Sprintf("Sales Tax: %v\n", p.SalesTax))
-	builder.WriteString(fmt.Sprintf("Tip: %v\n", p.Tip))
-	builder.WriteString(fmt.Sprintf("Discounts: %v\n", p.Discounts))
-
-	return builder.String()
+	SalesTax                 float32 `db:"sales_tax"`
+	Tip                      float32
+	ServiceFee               float32 `db:"service_fee"`
+	DeliveryFee              float32 `db:"delivery_fee"`
+	Discounts                float32
+	UnparsedReceiptRequestID uuid.UUID `db:"unparsed_receipt_request_id"`
 }

@@ -57,22 +57,13 @@ func handleReceiptDetail(repo ReceiptRepository, m *middleware.Context) gin.Hand
 			return
 		}
 
-		userID := m.UserIDFromRequest(c.Request).String()
-		receipt, err := repo.GetReceiptDetail(receiptUUID)
+		userID := m.UserIDFromRequest(c.Request)
+		receipt, err := repo.GetReceiptDetail(userID, receiptUUID)
 		if err != nil {
 			m.Error("Failed to retrieve receipt")
 			m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to retrieve receipt",
-			})
-			return
-		}
-
-		if receipt.UserID.String() != userID {
-			m.Error("Request User ID didn't match receipt's User ID")
-			m.Error(err.Error())
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
 			})
 			return
 		}
@@ -115,15 +106,16 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 			return
 		}
 
-		m.Info("User ID: '%v'", userID)
+		m.Info("User ID: '%v'", userID.String())
 
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}
 		receiptRequest.RawHTML = req.Data
 		receiptRequest.RequestTimestamp = time.Now()
 		receiptRequest.OriginalURL = req.URL
+		receiptRequest.UserUUID = userID
 
-		requestID, err := repo.SaveReceiptRequest(&receiptRequest)
+		err := repo.SaveReceiptRequest(&receiptRequest)
 		if err != nil {
 			m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -132,7 +124,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 			return
 		}
 
-		m.Info("Object ID of request: %v", requestID)
+		m.Info("Object ID of request: %v", receiptRequest.ID)
 
 		receipt, err := ParseReceipt(receiptRequest)
 		if err != nil {
@@ -157,11 +149,9 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 			item.Category = itemToCat[item.Name]
 		}
 
-		receipt.OriginalURL = req.URL
-		receipt.UserID = userID
-		receipt.UnparsedReceiptRequestID = uuid.MustParse(requestID)
+		receipt.UnparsedReceiptRequestID = receiptRequest.ID
 
-		id, err := repo.SaveReceipt(&receipt)
+		err = repo.SaveReceipt(&receipt)
 		if err != nil {
 			m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -170,10 +160,10 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 		}
 
 		// print out the details
-		m.Info("Object ID of receipt: %v", id)
+		m.Info("Object ID of receipt: %v", receipt.ID.String())
 
 		c.JSON(http.StatusAccepted, gin.H{
-			"id": id,
+			"id": receipt.ID.String(),
 		})
 
 	}
