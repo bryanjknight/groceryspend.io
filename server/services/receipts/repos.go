@@ -248,7 +248,7 @@ func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.U
 		order by sum(total_cost) desc
 	`
 	retval := []*AggregatedCategory{}
-	rows, err := r.DbConnection.QueryContext(context.Background(), sql, start, end)
+	rows, err := r.DbConnection.QueryxContext(context.Background(), sql, start, end)
 	defer rows.Close()
 
 	if err != nil {
@@ -257,7 +257,7 @@ func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.U
 
 	for rows.Next() {
 		var catSum AggregatedCategory
-		err = rows.Scan(&catSum)
+		err = rows.StructScan(&catSum)
 		if err != nil {
 			return retval, err
 		}
