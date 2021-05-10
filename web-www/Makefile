@@ -7,6 +7,9 @@ endif
 build:
 	hugo --minify
 
+run:
+	hugo serve -D
+
 docker:
 	docker build -t web-www:$(DOCKER_TAG) .
 
