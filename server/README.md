@@ -11,6 +11,7 @@ We use Postgres for all of our data storage needs
 
 ## Dev Tools
 * `sqlc`: `brew install sqlc`
+  * Deprecated, will move `users` to `sqlx`
 * `golang-migrate`: `brew install golang-migrate`
 ```
 # For CICD
@@ -31,6 +32,8 @@ We use Postgres for all of our data storage needs
 1. Create your your database (e.g. `CREATE DATABASE` or `createdb`)
 1. Run `migrate -path services/<service-name>/db/migration -database "postgresql://postgres:example@localhost:5432/<service-db>?sslmode=disable" -verbose up`
 
+### Adding a change to a database
+1. run `migrate create -ext sql -dir services/<service-name>/db/migration -seq <reason-for-change>`
 ### Adding queries via `sqlc`
 1. Install `sqlc` as described above
 1. Update service in `sqlc.yaml`. Below is an example:
