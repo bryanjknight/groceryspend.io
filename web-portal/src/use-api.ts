@@ -2,33 +2,27 @@
 import { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 
-export const useApi = (
-  url: string,
+// useApi wraps around an api call and returns the type desired
+export const useApi = <T>(
+  apiCall: (bearerToken: string) => Promise<T>,
   options: any = {}
-): { error?: Error | null; loading: boolean; data?: any } => {
+): { error?: Error | null; loading: boolean; data?: T | null } => {
   const { getAccessTokenSilently } = useAuth0();
   const [state, setState] = useState({
     error: null,
     loading: true,
-    data: null,
+    data: null as T | null,
   });
 
   useEffect(() => {
     (async () => {
       try {
-        const { audience, scope, ...fetchOptions } = options;
+        const { audience, scope } = options;
         const accessToken = await getAccessTokenSilently({ audience, scope });
-        const res = await fetch(url, {
-          ...fetchOptions,
-          headers: {
-            ...fetchOptions.headers,
-            // Add the Authorization header to the existing headers
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        const data = await apiCall(accessToken);
         setState({
           ...state,
-          data: await res.json(),
+          data: data,
           error: null,
           loading: false,
         });

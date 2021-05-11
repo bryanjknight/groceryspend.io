@@ -53,9 +53,7 @@ func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository, m middlew
 		}
 
 		// return a JSON blob of results
-		c.JSON(http.StatusOK, gin.H{
-			"results": results,
-		})
+		c.JSON(http.StatusOK, results)
 
 	}
 

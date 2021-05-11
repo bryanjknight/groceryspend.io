@@ -3,19 +3,12 @@ import React from 'react';
 import { Loading } from './Loading';
 import { Error } from './Error';
 import { Link } from 'react-router-dom';
-
-// TODO: possible use for io-ts to verify response
-interface Receipt {
-  ID: string;
-  OriginalURL: string;
-  OrderTimestamp: string;
-}
-
-type ReceiptsResponse = Record<string, Receipt[]>
+import { ReceiptSummary, ReceiptSummaryArray } from './models';
+import { getReceipts } from './api';
 
 export function Receipts(): JSX.Element {
-  const { loading, error, data: resp = {} as ReceiptsResponse} = useApi(
-    `${process.env.API_URL}/receipts/`,
+  const { loading, error, data} = useApi<ReceiptSummaryArray>(
+    getReceipts(),
     {
       audience: "https://bknight.dev.groceryspend.io",
       scope: 'read:users',
@@ -32,8 +25,6 @@ export function Receipts(): JSX.Element {
     return <Error message={error.message} />;
   }
 
-  const receipts: Receipt[] = "results" in resp ? resp["results"] : []
-
   return (
     <table className="table">
       <thead>
@@ -44,11 +35,11 @@ export function Receipts(): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        {receipts?.map(
-          (receipt: Receipt, i: number) => (
+        {data?.map(
+          (receipt: ReceiptSummary, i: number) => (
             <tr key={receipt.ID}>
               <td>{receipt.OrderTimestamp}</td>
-              <td><a href={receipt.OriginalURL}>Link to Original Order</a></td>
+              <td><a href={receipt.OrderNumber}>Link to Original Order</a></td>
               <td><Link to={{
                 pathname: `/receipts/${receipt.ID}`,
                 state: {

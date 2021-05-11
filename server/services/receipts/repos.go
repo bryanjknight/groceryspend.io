@@ -2,6 +2,7 @@ package receipts
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"database/sql"
@@ -237,18 +238,24 @@ func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID
 }
 
 // AggregateSpendByCategoryOverTime get spend by category over time
-func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
+func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
 	sql := `
 		select sum(total_cost) as value, category
 		from parsed_items pi
 		inner join parsed_receipts pr on
 			pi.parsed_receipt_id = pr.id
-		where pr.order_timestamp between $1 and $2
+		inner join unparsed_receipt_requests urr on
+			pr.unparsed_receipt_request_id = urr.id
+		where urr.user_id = $1 
+			AND pr.order_timestamp between $2 AND $3
 		group by category
 		order by sum(total_cost) desc
 	`
 	retval := []*AggregatedCategory{}
-	rows, err := r.DbConnection.QueryxContext(context.Background(), sql, start, end)
+	rows, err := r.DbConnection.QueryxContext(context.Background(), sql, userID, start, end)
+	if rows == nil {
+		return retval, fmt.Errorf("Got null rows back")
+	}
 	defer rows.Close()
 
 	if err != nil {
@@ -264,5 +271,6 @@ func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.U
 		retval = append(retval, &catSum)
 	}
 
+	println(fmt.Sprintf("Num of rows returned: %v", len(retval)))
 	return retval, nil
 }

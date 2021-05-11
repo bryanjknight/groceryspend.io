@@ -1,42 +1,19 @@
-import { useApi } from './use-api';
-import React from 'react';
-import { Loading } from './Loading';
-import { Error } from './Error';
-import { RouteComponentProps } from 'react-router-dom';
-
-// TODO: possible use for io-ts to verify response
-
-interface Item {
-  ID: string;
-  TotalCost: number;
-  Qty: number;
-  Weight: number;
-  Name: string;
-  Category: string;
-}
-
-interface Receipt {
-  ID: string;
-  OriginalURL: string;
-  OrderTimestamp: string;
-  ParsedItems: Item[];
-  SalesTax: number;
-  Tip: number;
-  ServiceFee: number;
-  DeliveryFee: number;
-  Discounts: number;
-}
-
-type ReceiptsResponse = Record<string, Receipt[]>
+import { useApi } from "./use-api";
+import React from "react";
+import { Loading } from "./Loading";
+import { Error } from "./Error";
+import { RouteComponentProps } from "react-router-dom";
+import { Item, ReceiptDetail } from "./models";
+import { getReceiptDetails } from "./api";
 
 export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
   const params = props.match.params;
   const receiptID = "ID" in params ? params["ID"] : "";
-  const { loading, error, data: resp = {} as ReceiptsResponse} = useApi(
-    `${process.env.API_URL}/receipts/${receiptID}`,
+  const { loading, error, data } = useApi<ReceiptDetail | null>(
+    getReceiptDetails(receiptID),
     {
-      audience: "https://bknight.dev.groceryspend.io",
-      scope: 'read:users',
+      audience: process.env.REACT_APP_AUDIENCE,
+      scope: "read:users",
       mode: "cors",
       credentials: "include",
     }
@@ -50,7 +27,9 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
     return <Error message={error.message} />;
   }
 
-  const receipt: Receipt = "results" in resp ? resp["results"] : {}
+  if (!data) {
+    return <div>Receipt not found</div>;
+  }
 
   return (
     <table className="table">
@@ -61,14 +40,12 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        {receipt.ParsedItems?.map(
-          (item: Item, i: number) => (
-            <tr key={item.ID}>
-              <td>{item.Name}</td>
-              <td>${item.TotalCost}</td>
-            </tr>
-          )
-        )}
+        {data.ParsedItems?.map((item: Item, i: number) => (
+          <tr key={item.ID}>
+            <td>{item.Name}</td>
+            <td>${item.TotalCost}</td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );

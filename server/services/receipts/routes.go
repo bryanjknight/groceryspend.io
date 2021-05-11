@@ -35,9 +35,7 @@ func handleListReceipts(repo ReceiptRepository, m *middleware.Context) gin.Handl
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"results": receipts,
-		})
+		c.JSON(http.StatusOK, receipts)
 
 	}
 	return fn
@@ -68,9 +66,7 @@ func handleReceiptDetail(repo ReceiptRepository, m *middleware.Context) gin.Hand
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"results": receipt,
-		})
+		c.JSON(http.StatusOK, receipt)
 
 	}
 	return fn

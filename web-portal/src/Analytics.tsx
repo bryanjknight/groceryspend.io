@@ -4,34 +4,22 @@ import React from "react";
 import { Loading } from "./Loading";
 import { Error } from "./Error";
 import { DonutChart } from "./components/charts";
-
-// TODO: possible use for io-ts to verify response
-interface Aggregation {
-  Category: string;
-  Value: number;
-}
-
-type AnalyticsResponse = Record<string, Aggregation[]>;
+import { getSpendByCategoryOverTime } from "./api";
+import { AggregationArray } from "./models";
 
 export function Analytics(): JSX.Element {
   const now = new Date();
   const oneMonthPrior = subMonths(now, 1);
 
-  const queryParamsObj = {
-    startDate: format(oneMonthPrior, "yyyy-MM-dd"),
-    endDate: format(now, "yyyy-MM-dd"),
-  };
-  const queryParams = new URLSearchParams(queryParamsObj);
+  const startDate = format(oneMonthPrior, "yyyy-MM-dd");
+  const endDate = format(now, "yyyy-MM-dd");
 
-  const { loading, error, data: resp = {} as AnalyticsResponse } = useApi(
-    `${process.env.API_URL}/analytics/spend-by-category?${queryParams.toString()}`,
-    {
-      audience: process.env.REACT_APP_AUDIENCE,
-      scope: "read:users",
-      mode: "cors",
-      credentials: "include",
-    }
-  );
+  const apiCall = getSpendByCategoryOverTime(startDate, endDate);
+
+  const { loading, error, data } = useApi<AggregationArray>(apiCall, {
+    audience: process.env.REACT_APP_AUDIENCE,
+    scope: "read:users",
+  });
 
   if (loading) {
     return <Loading />;
@@ -41,14 +29,17 @@ export function Analytics(): JSX.Element {
     return <Error message={error.message} />;
   }
 
-  const aggregations: Aggregation[] = "results" in resp ? resp["results"] : [];
+  if (!data) {
+    // TODO: better message here
+    return <div>No results</div>;
+  }
 
   return (
     <div>
       <p>Spend over the past month by Category</p>
       <div>
         <DonutChart
-          data={aggregations.map((a) => [a.Category, a.Value])}
+          data={data.map((a) => [a.Category, a.Value])}
           width={500}
           height={500}
           maxCategories={5}
