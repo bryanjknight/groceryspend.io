@@ -10,7 +10,7 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
   const params = props.match.params;
   const receiptID = "ID" in params ? params["ID"] : "";
   const { loading, error, data } = useApi<ReceiptDetail | null>(
-    getReceiptDetails(receiptID),
+    getReceiptDetails({receiptUuid: receiptID}),
     {
       audience: process.env.REACT_APP_AUDIENCE,
       scope: "read:users",

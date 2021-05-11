@@ -1,0 +1,40 @@
+{
+  "consumer": {
+    "name": "web-portal"
+  },
+  "provider": {
+    "name": "server"
+  },
+  "interactions": [
+    {
+      "description": "a request for all receipts",
+      "providerState": "I have a list of receipts",
+      "request": {
+        "method": "GET",
+        "path": "/receipts/",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "Bearer 2025-05-11"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-type": "application/json"
+        },
+        "body": [
+          {
+            "ID": "38fe9a81-66cc-461b-96d0-40edfe3e66ff",
+            "OrderNumber": "0123456789",
+            "OrderTimestamp": "2021-05-11T12:00:00Z"
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  }
+}

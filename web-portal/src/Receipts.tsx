@@ -8,7 +8,7 @@ import { getReceipts } from './api';
 
 export function Receipts(): JSX.Element {
   const { loading, error, data} = useApi<ReceiptSummaryArray>(
-    getReceipts(),
+    getReceipts({}),
     {
       audience: "https://bknight.dev.groceryspend.io",
       scope: 'read:users',

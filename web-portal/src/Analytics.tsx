@@ -14,7 +14,7 @@ export function Analytics(): JSX.Element {
   const startDate = format(oneMonthPrior, "yyyy-MM-dd");
   const endDate = format(now, "yyyy-MM-dd");
 
-  const apiCall = getSpendByCategoryOverTime(startDate, endDate);
+  const apiCall = getSpendByCategoryOverTime({start: startDate, end: endDate});
 
   const { loading, error, data } = useApi<AggregationArray>(apiCall, {
     audience: process.env.REACT_APP_AUDIENCE,
