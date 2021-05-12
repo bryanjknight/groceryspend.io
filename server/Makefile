@@ -13,6 +13,9 @@ build:
 unit-test:
 	go test --cover -v ./...
 
+integration-test:
+	go test --cover -v --tags=integration  ./...	
+
 run:
 	docker compose up -d
 	go run main.go
