@@ -1,6 +1,8 @@
 import { JestPactOptions, pactWith } from "jest-pact";
 import * as api from "../api";
 import { HTTPMethod } from "@pact-foundation/pact/src/common/request";
+import { ReceiptSummaryArray } from "../models";
+import { isRight } from "fp-ts/lib/Either";
 
 const jestPactConfig: JestPactOptions = {
   consumer: "web-portal",
@@ -17,6 +19,10 @@ pactWith(jestPactConfig, (provider) => {
         OrderTimestamp: "2021-05-11T12:00:00Z",
       },
     ];
+
+    // additional check that we have checked our object schema
+    const parseCheck = ReceiptSummaryArray.decode(RECEIPT_DATA);
+    expect(isRight(parseCheck)).toBeTruthy();
 
     const receiptSuccessResponse = {
       status: 200,
