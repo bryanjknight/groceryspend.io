@@ -27,7 +27,7 @@ pactWith(jestPactConfig, (provider) => {
     const receiptSuccessResponse = {
       status: 200,
       headers: {
-        "Content-type": "application/json",
+        "Content-type": "application/json; charset=utf-8",
       },
       body: RECEIPT_DATA,
     };

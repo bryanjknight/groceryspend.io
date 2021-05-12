@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -75,4 +76,26 @@ func NewAuthMiddleware(config string, cache *memoize.Memoizer) Middleware {
 	println("Unable to match middleware config with middleware, defaulting to deny all")
 	return NewDenyAllMiddleware()
 
+}
+
+// MockBearerTokenAuthMiddleware Test middleware for pact tests
+type MockBearerTokenAuthMiddleware struct {
+	TokenToUserID   map[string]uuid.UUID
+	IsAuthenticated bool
+}
+
+func (m *MockBearerTokenAuthMiddleware) VerifySession() gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		if !m.IsAuthenticated {
+			c.Abort()
+			c.Writer.WriteHeader(http.StatusUnauthorized)
+			c.Writer.Write([]byte("Unauthorized"))
+		}
+	}
+	return fn
+}
+func (m *MockBearerTokenAuthMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
+	token := r.Header.Get("Authorization")
+	u := strings.TrimPrefix(token, "Bearer ")
+	return m.TokenToUserID[u]
 }

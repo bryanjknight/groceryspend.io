@@ -8,6 +8,7 @@ import (
 
 	"groceryspend.io/server/middleware"
 	"groceryspend.io/server/services/analytics"
+	"groceryspend.io/server/services/categorize"
 	"groceryspend.io/server/services/receipts"
 	"groceryspend.io/server/utils"
 )
@@ -38,7 +39,11 @@ func main() {
 		MaxAge:                 utils.GetOsValueAsDuration("AUTH_MAX_AGE"),
 	}))
 
-	receipts.WebhookRoutes(r, middlewareContext)
+	// create repos
+	receiptsRepo := receipts.NewPostgresReceiptRepository()
+	categorizeClient := categorize.NewDefaultClient()
+
+	receipts.ReceiptRoutes(r, receiptsRepo, categorizeClient, middlewareContext)
 	analytics.Routes(r, middlewareContext)
 	r.Run("0.0.0.0:8080")
 

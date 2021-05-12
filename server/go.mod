@@ -18,6 +18,7 @@ require (
 	github.com/lib/pq v1.10.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/pact-foundation/pact-go v1.5.2 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/ugorji/go v1.2.5 // indirect
 	golang.org/x/crypto v0.0.0-20210421142844-5bf0f12babf7 // indirect

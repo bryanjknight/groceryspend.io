@@ -10,22 +10,20 @@ import (
 	"groceryspend.io/server/services/categorize"
 )
 
-// WebhookRoutes defines all webhook routes
-func WebhookRoutes(route *gin.Engine, middleware *middleware.Context) {
-	router := route.Group("/receipts")
+// ReceiptRoutes defines all webhook routes
+func ReceiptRoutes(route *gin.Engine, repo ReceiptRepository, catClient categorize.Client, middleware *middleware.Context) {
+	router := route.Group("/receipts", middleware.VerifySession())
 
-	repo := NewPostgresReceiptRepository()
-	categorizeClient := categorize.NewDefaultClient()
-
-	router.GET("/", middleware.VerifySession(), handleListReceipts(repo, middleware))
-	router.GET("/:id", middleware.VerifySession(), handleReceiptDetail(repo, middleware))
-	router.POST("/receipt", middleware.VerifySession(), handleSubmitReceipt(repo, middleware, categorizeClient))
+	router.GET("/", handleListReceipts(repo, middleware))
+	router.GET("/:id", handleReceiptDetail(repo, middleware))
+	router.POST("/receipt", handleSubmitReceipt(repo, middleware, catClient))
 }
 
 func handleListReceipts(repo ReceiptRepository, m *middleware.Context) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 
-		receipts, err := repo.GetReceipts(m.UserIDFromRequest(c.Request))
+		userID := m.UserIDFromRequest(c.Request)
+		receipts, err := repo.GetReceipts(userID)
 		if err != nil {
 			m.Error("Failed to retrieve receipts")
 			m.Error(err.Error())

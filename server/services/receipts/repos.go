@@ -274,3 +274,39 @@ func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid
 	println(fmt.Sprintf("Num of rows returned: %v", len(retval)))
 	return retval, nil
 }
+
+type InMemoryReceiptRepository struct {
+	idToRequest map[string]*UnparsedReceiptRequest
+	idToReceipt map[string]*ParsedReceipt
+}
+
+func (r *InMemoryReceiptRepository) SaveReceipt(receipt *ParsedReceipt) error {
+	r.idToReceipt[receipt.ID.String()] = receipt
+	return nil
+}
+
+func (r *InMemoryReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptRequest) error {
+	r.idToRequest[request.ID.String()] = request
+	return nil
+}
+
+func (r *InMemoryReceiptRepository) GetReceipts(user uuid.UUID) ([]*ParsedReceipt, error) {
+	retval := []*ParsedReceipt{}
+
+	for _, value := range r.idToRequest {
+		if value.UserUUID.String() == user.String() {
+			retval = append(retval, value.ParsedReceipt)
+		}
+	}
+
+	return retval, nil
+}
+
+func (r *InMemoryReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ParsedReceipt, error) {
+	// we ignore user id for simpilicity and this was only meant for testing
+	return r.idToReceipt[receiptID.String()], nil
+}
+
+func (r *InMemoryReceiptRepository) AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
+	return nil, fmt.Errorf("not implemented")
+}

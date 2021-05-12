@@ -8,13 +8,13 @@ import (
 	"groceryspend.io/server/middleware/o11y"
 )
 
-type authMiddleware = auth.Middleware
-type obsMiddleware = o11y.Middleware
+type AuthMiddleware = auth.Middleware
+type ObsMiddleware = o11y.Middleware
 
 // Context contains all middleware features (auth, observability, etc)
 type Context struct {
-	authMiddleware
-	obsMiddleware
+	AuthMiddleware
+	ObsMiddleware
 }
 
 // NewMiddlewareContext create a new middleware context
