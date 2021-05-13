@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"groceryspend.io/server/middleware"
+	"groceryspend.io/server/middleware/auth"
 	"groceryspend.io/server/services/categorize"
 )
 
@@ -14,19 +15,20 @@ import (
 func ReceiptRoutes(route *gin.Engine, repo ReceiptRepository, catClient categorize.Client, middleware *middleware.Context) {
 	router := route.Group("/receipts", middleware.VerifySession())
 
-	router.GET("/", handleListReceipts(repo, middleware))
-	router.GET("/:id", handleReceiptDetail(repo, middleware))
-	router.POST("/receipt", handleSubmitReceipt(repo, middleware, catClient))
+	router.GET("/", handleListReceipts(repo))
+	router.GET("/:id", handleReceiptDetail(repo))
+	router.POST("/receipt", handleSubmitReceipt(repo, catClient))
 }
 
-func handleListReceipts(repo ReceiptRepository, m *middleware.Context) gin.HandlerFunc {
+func handleListReceipts(repo ReceiptRepository) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 
-		userID := m.UserIDFromRequest(c.Request)
+		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
+
 		receipts, err := repo.GetReceipts(userID)
 		if err != nil {
-			m.Error("Failed to retrieve receipts")
-			m.Error(err.Error())
+			// m.Error("Failed to retrieve receipts")
+			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to retrieve receipts",
 			})
@@ -39,25 +41,25 @@ func handleListReceipts(repo ReceiptRepository, m *middleware.Context) gin.Handl
 	return fn
 }
 
-func handleReceiptDetail(repo ReceiptRepository, m *middleware.Context) gin.HandlerFunc {
+func handleReceiptDetail(repo ReceiptRepository) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		receiptID := c.Param("id")
 		receiptUUID, err := uuid.Parse(receiptID)
 
 		if err != nil {
-			m.Error("Failed to parse request")
-			m.Error(err.Error())
+			// m.Error("Failed to parse request")
+			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Invalid Receipt ID",
 			})
 			return
 		}
 
-		userID := m.UserIDFromRequest(c.Request)
+		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
 		receipt, err := repo.GetReceiptDetail(userID, receiptUUID)
 		if err != nil {
-			m.Error("Failed to retrieve receipt")
-			m.Error(err.Error())
+			// m.Error("Failed to retrieve receipt")
+			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to retrieve receipt",
 			})
@@ -78,29 +80,27 @@ type submitReceiptForParsing struct {
 
 // TODO: refactor so the logic is more reusable (e.g. in a client layer). The router should only be responible for
 //			 parsing the request and passing the appropriate response
-func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categorizeClient categorize.Client) gin.HandlerFunc {
+func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Client) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
 		var req submitReceiptForParsing
 		if err := c.ShouldBind(&req); err != nil {
-			m.Error("Failed to parse request")
-			m.Error(err.Error())
+			// m.Error("Failed to parse request")
+			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
-		userID := m.UserIDFromRequest(c.Request)
+		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
 		if userID == uuid.Nil {
-			m.Error("Failed to look up user ID")
+			// m.Error("Failed to look up user ID")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to look up user",
 			})
 			return
 		}
-
-		m.Info("User ID: '%v'", userID.String())
 
 		// submit request to be parsed
 		receiptRequest := UnparsedReceiptRequest{}
@@ -111,14 +111,12 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 
 		err := repo.SaveReceiptRequest(&receiptRequest)
 		if err != nil {
-			m.Error(err.Error())
+			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
-
-		m.Info("Object ID of request: %v", receiptRequest.ID)
 
 		receipt, err := ParseReceipt(receiptRequest)
 		if err != nil {
@@ -135,7 +133,7 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 
 			err = categorizeClient.GetCategoryForItems(itemNames, &itemToCat)
 			if err != nil {
-				m.Error(err.Error())
+				// m.Error(err.Error())
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": err.Error(),
 				})
@@ -147,14 +145,14 @@ func handleSubmitReceipt(repo ReceiptRepository, m *middleware.Context, categori
 
 		err = repo.SaveReceipt(&receipt)
 		if err != nil {
-			m.Error(err.Error())
+			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 		}
 
 		// print out the details
-		m.Info("Object ID of receipt: %v", receipt.ID.String())
+		// m.Info("Object ID of receipt: %v", receipt.ID.String())
 
 		c.JSON(http.StatusAccepted, gin.H{
 			"id": receipt.ID.String(),

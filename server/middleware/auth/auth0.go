@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/form3tech-oss/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/kofalt/go-memoize"
 	"groceryspend.io/server/services/users"
 	"groceryspend.io/server/utils"
@@ -141,25 +141,30 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 		}
 
 		// TODO: add checks on scopes
+
+		// set the contet with the user uuid
+		// "user" is set by the auth0 CheckJWT call
+		u := c.Request.Context().Value("user")
+		user := u.(*jwt.Token)
+		iss := user.Claims.(jwt.MapClaims)["iss"].(string)
+		sub := user.Claims.(jwt.MapClaims)["sub"].(string)
+
+		auth0ID := iss + "|" + sub
+
+		canonicalUser, err := m.userClient.LookupUserByAuthProvider(utils.GetOsValue("AUTH_PROVIDER"), auth0ID)
+		if err != nil {
+			c.AbortWithError(500, fmt.Errorf("Failed to get user from user database"))
+		}
+
+		// If we get here, everything worked and we can set the
+		// user property in context.
+		originalRequest := c.Request
+		originalRequestCtx := originalRequest.Context()
+		newRequest := originalRequest.WithContext(context.WithValue(originalRequestCtx, AuthUserIDKey, canonicalUser.ID))
+		// Update the current request with the new context information.
+		c.Request = newRequest
+
 	}
 
 	return gin.HandlerFunc(fn)
-}
-
-// UserIDFromRequest fetch the user ID from the JWT
-func (m *Auth0JwtAuthMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
-	u := r.Context().Value("user")
-	user := u.(*jwt.Token)
-	iss := user.Claims.(jwt.MapClaims)["iss"].(string)
-	sub := user.Claims.(jwt.MapClaims)["sub"].(string)
-
-	auth0ID := iss + "|" + sub
-
-	canonicalUser, err := m.userClient.LookupUserByAuthProvider(utils.GetOsValue("AUTH_PROVIDER"), auth0ID)
-	if err != nil {
-		// FIXME: should handle this better
-		return uuid.Nil
-	}
-
-	return canonicalUser.ID
 }

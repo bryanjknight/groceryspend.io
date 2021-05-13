@@ -2,7 +2,6 @@ package auth
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -10,10 +9,12 @@ import (
 	"groceryspend.io/server/services/users"
 )
 
+// AuthUserIDKey the key to use to look the user in the gin context
+const AuthUserIDKey = "GROCERY_SPEND_AUTH_USER"
+
 // Middleware middleware to verify session and access
 type Middleware interface {
 	VerifySession() gin.HandlerFunc
-	UserIDFromRequest(r *http.Request) uuid.UUID
 }
 
 // DenyAllMiddleware denies all traffic
@@ -34,11 +35,6 @@ func (d *DenyAllMiddleware) VerifySession() gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
-// UserIDFromRequest get user ID from request
-func (d *DenyAllMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
-	return uuid.Nil
-}
-
 // PassthroughMiddleware allows all traffic and does no checks
 type PassthroughMiddleware struct {
 }
@@ -51,14 +47,9 @@ func NewPassthroughAuthMiddleware() *PassthroughMiddleware {
 // VerifySession verify the session is valid
 func (p *PassthroughMiddleware) VerifySession() gin.HandlerFunc {
 	fn := func(c *gin.Context) {
-
+		c.Set(AuthUserIDKey, uuid.Nil)
 	}
 	return gin.HandlerFunc(fn)
-}
-
-// UserIDFromRequest get user ID from request
-func (p *PassthroughMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
-	return uuid.Nil
 }
 
 // NewAuthMiddleware create a new auth middleware for auth/authz
@@ -76,26 +67,4 @@ func NewAuthMiddleware(config string, cache *memoize.Memoizer) Middleware {
 	println("Unable to match middleware config with middleware, defaulting to deny all")
 	return NewDenyAllMiddleware()
 
-}
-
-// MockBearerTokenAuthMiddleware Test middleware for pact tests
-type MockBearerTokenAuthMiddleware struct {
-	TokenToUserID   map[string]uuid.UUID
-	IsAuthenticated bool
-}
-
-func (m *MockBearerTokenAuthMiddleware) VerifySession() gin.HandlerFunc {
-	fn := func(c *gin.Context) {
-		if !m.IsAuthenticated {
-			c.Abort()
-			c.Writer.WriteHeader(http.StatusUnauthorized)
-			c.Writer.Write([]byte("Unauthorized"))
-		}
-	}
-	return fn
-}
-func (m *MockBearerTokenAuthMiddleware) UserIDFromRequest(r *http.Request) uuid.UUID {
-	token := r.Header.Get("Authorization")
-	u := strings.TrimPrefix(token, "Bearer ")
-	return m.TokenToUserID[u]
 }

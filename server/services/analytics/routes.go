@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"groceryspend.io/server/middleware"
+	"groceryspend.io/server/middleware/auth"
 	"groceryspend.io/server/services/receipts"
 )
 
@@ -16,7 +18,7 @@ func Routes(route *gin.Engine, middleware *middleware.Context) {
 	// TODO: setup repos and caching mechanisms
 	receiptRepo := receipts.NewPostgresReceiptRepository()
 
-	router.GET("spend-by-category", middleware.VerifySession(), handleSpendByCategoryInTimeframe(receiptRepo, *middleware))
+	router.GET("spend-by-category", middleware.VerifySession(), handleSpendByCategoryInTimeframe(receiptRepo))
 }
 
 type spendByCategoryRequest struct {
@@ -24,17 +26,17 @@ type spendByCategoryRequest struct {
 	EndDate   string `form:"endDate"`
 }
 
-func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository, m middleware.Context) gin.HandlerFunc {
+func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 
 		// get canonical user id
-		userID := m.UserIDFromRequest(c.Request)
+		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
 
 		// parse the time frame to run query
 		var params spendByCategoryRequest
 
 		if err := c.Bind(&params); err != nil {
-			m.Error(err.Error())
+			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
@@ -46,7 +48,7 @@ func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository, m middlew
 		// run raw query to get results by category
 		results, err := repo.AggregateSpendByCategoryOverTime(userID, s, e)
 		if err != nil {
-			m.Error(err.Error())
+			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
