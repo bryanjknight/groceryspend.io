@@ -140,6 +140,12 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 			c.Writer.Write([]byte("Unauthorized"))
 		}
 
+		// if it's a preflight check, don't try to verify the session since the
+		// bearer token isn't sent
+		if c.Request.Method == "OPTIONS" {
+			return
+		}
+
 		// TODO: add checks on scopes
 
 		// set the contet with the user uuid

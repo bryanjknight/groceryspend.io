@@ -6,19 +6,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"groceryspend.io/server/middleware"
 	"groceryspend.io/server/middleware/auth"
 	"groceryspend.io/server/services/receipts"
 )
 
 // Routes define the routes for analytics
-func Routes(route *gin.Engine, middleware *middleware.Context) {
+func Routes(route *gin.Engine, receiptRepo receipts.ReceiptRepository) {
 	router := route.Group("/analytics")
 
-	// TODO: setup repos and caching mechanisms
-	receiptRepo := receipts.NewPostgresReceiptRepository()
-
-	router.GET("spend-by-category", middleware.VerifySession(), handleSpendByCategoryInTimeframe(receiptRepo))
+	router.GET("spend-by-category", handleSpendByCategoryInTimeframe(receiptRepo))
 }
 
 type spendByCategoryRequest struct {
@@ -36,7 +32,6 @@ func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository) gin.Handl
 		var params spendByCategoryRequest
 
 		if err := c.Bind(&params); err != nil {
-			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
@@ -48,7 +43,6 @@ func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository) gin.Handl
 		// run raw query to get results by category
 		results, err := repo.AggregateSpendByCategoryOverTime(userID, s, e)
 		if err != nil {
-			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})

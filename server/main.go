@@ -28,6 +28,12 @@ func main() {
 	authConfig := utils.GetOsValue("AUTH_PROVIDER")
 	middlewareContext := middleware.NewMiddlewareContext(authConfig)
 
+	// instrument all http requests
+	r.Use(middlewareContext.InstrumentHTTPRequest())
+
+	// all calls must be validated by a bearer token
+	r.Use(middlewareContext.VerifySession())
+
 	// set up CORS for requests
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:           utils.GetOsValueAsArray("AUTH_ALLOW_ORIGINS"),
@@ -43,8 +49,8 @@ func main() {
 	receiptsRepo := receipts.NewPostgresReceiptRepository()
 	categorizeClient := categorize.NewDefaultClient()
 
-	receipts.ReceiptRoutes(r, receiptsRepo, categorizeClient, middlewareContext)
-	analytics.Routes(r, middlewareContext)
+	receipts.ReceiptRoutes(r, receiptsRepo, categorizeClient)
+	analytics.Routes(r, receiptsRepo)
 	r.Run("0.0.0.0:8080")
 
 }

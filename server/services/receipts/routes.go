@@ -6,14 +6,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"groceryspend.io/server/middleware"
 	"groceryspend.io/server/middleware/auth"
 	"groceryspend.io/server/services/categorize"
 )
 
 // ReceiptRoutes defines all webhook routes
-func ReceiptRoutes(route *gin.Engine, repo ReceiptRepository, catClient categorize.Client, middleware *middleware.Context) {
-	router := route.Group("/receipts", middleware.VerifySession())
+func ReceiptRoutes(route *gin.Engine, repo ReceiptRepository, catClient categorize.Client) {
+	router := route.Group("/receipts")
 
 	router.GET("/", handleListReceipts(repo))
 	router.GET("/:id", handleReceiptDetail(repo))
@@ -27,8 +26,6 @@ func handleListReceipts(repo ReceiptRepository) gin.HandlerFunc {
 
 		receipts, err := repo.GetReceipts(userID)
 		if err != nil {
-			// m.Error("Failed to retrieve receipts")
-			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to retrieve receipts",
 			})
@@ -47,8 +44,6 @@ func handleReceiptDetail(repo ReceiptRepository) gin.HandlerFunc {
 		receiptUUID, err := uuid.Parse(receiptID)
 
 		if err != nil {
-			// m.Error("Failed to parse request")
-			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Invalid Receipt ID",
 			})
@@ -58,8 +53,6 @@ func handleReceiptDetail(repo ReceiptRepository) gin.HandlerFunc {
 		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
 		receipt, err := repo.GetReceiptDetail(userID, receiptUUID)
 		if err != nil {
-			// m.Error("Failed to retrieve receipt")
-			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to retrieve receipt",
 			})
@@ -85,8 +78,6 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 	fn := func(c *gin.Context) {
 		var req submitReceiptForParsing
 		if err := c.ShouldBind(&req); err != nil {
-			// m.Error("Failed to parse request")
-			// m.Error(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
@@ -95,7 +86,6 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 
 		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
 		if userID == uuid.Nil {
-			// m.Error("Failed to look up user ID")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to look up user",
 			})
@@ -111,7 +101,6 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 
 		err := repo.SaveReceiptRequest(&receiptRequest)
 		if err != nil {
-			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
@@ -145,14 +134,10 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 
 		err = repo.SaveReceipt(&receipt)
 		if err != nil {
-			// m.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 		}
-
-		// print out the details
-		// m.Info("Object ID of receipt: %v", receipt.ID.String())
 
 		c.JSON(http.StatusAccepted, gin.H{
 			"id": receipt.ID.String(),
