@@ -9,7 +9,7 @@ export const useApi = <T>(
 ): { error?: Error | null; loading: boolean; data?: T | null } => {
   const { getAccessTokenSilently } = useAuth0();
   const [state, setState] = useState({
-    error: null,
+    error: null as Error | undefined | null,
     loading: true,
     data: null as T | null,
   });
@@ -27,9 +27,13 @@ export const useApi = <T>(
           loading: false,
         });
       } catch (error) {
+        // TODO: hook for o11y here (e.g. sentry)
+        console.error(`Error reported: ${error}`);
+
+        const newErr: Error = error.message ? error : new Error(error)
         setState({
           ...state,
-          error,
+          error: newErr,
           loading: false,
         });
       }

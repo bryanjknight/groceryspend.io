@@ -5,7 +5,7 @@ import { Loading } from "./Loading";
 import { Error } from "./Error";
 import { DonutChart } from "./components/charts";
 import { getSpendByCategoryOverTime } from "./api";
-import { AggregationArray } from "./models";
+import { Aggregation } from "./models";
 
 export function Analytics(): JSX.Element {
   const now = new Date();
@@ -16,7 +16,7 @@ export function Analytics(): JSX.Element {
 
   const apiCall = getSpendByCategoryOverTime({start: startDate, end: endDate});
 
-  const { loading, error, data } = useApi<AggregationArray>(apiCall, {
+  const { loading, error, data } = useApi<Aggregation[]>(apiCall, {
     audience: process.env.REACT_APP_AUDIENCE,
     scope: "read:users",
   });

@@ -1,4 +1,6 @@
-import { AggregationArray, ReceiptSummaryArray, ReceiptDetail } from "./models";
+import { ReceiptDetail, ReceiptSummary, Aggregation } from "./models";
+import * as t from 'io-ts';
+import { PathReporter } from 'io-ts/PathReporter'
 import { isRight } from "fp-ts/lib/Either";
 import axios from "axios";
 
@@ -17,7 +19,7 @@ export type GetReceiptsParams = PactTestable;
 // fetch receipts for this user
 export const getReceipts = (params: GetReceiptsParams) => (
   bearerToken: string
-): Promise<ReceiptSummaryArray> =>
+): Promise<ReceiptSummary[]> =>
   axios
     .request({
       method: "GET",
@@ -29,9 +31,9 @@ export const getReceipts = (params: GetReceiptsParams) => (
       },
     })
     .then((resp) => resp.data)
-    .then((data) => ReceiptSummaryArray.decode(data))
+    .then((data) => t.array(ReceiptSummary).decode(data))
     .then((ma) =>
-      isRight(ma) ? ma.right : Promise.reject("Failed to parse response")
+      isRight(ma) ? ma.right : Promise.reject(PathReporter.report(ma))
     );
 
 export interface GetReceiptDetailsParams extends PactTestable {
@@ -55,7 +57,7 @@ export const getReceiptDetails = (params: GetReceiptDetailsParams) => (
     .then((resp) => resp.data)
     .then((data) => ReceiptDetail.decode(data))
     .then((ma) =>
-      isRight(ma) ? ma.right : Promise.reject("Failed to parse response")
+      isRight(ma) ? ma.right : Promise.reject(PathReporter.report(ma))
     );
 
 // fetch analytics
@@ -65,7 +67,7 @@ export interface GetSpendByCategoryOverTimeParams extends PactTestable {
 }
 export const getSpendByCategoryOverTime = (
   params: GetSpendByCategoryOverTimeParams
-) => (bearerToken: string): Promise<AggregationArray> =>
+) => (bearerToken: string): Promise<Aggregation[]> =>
   axios
     .request({
       method: "GET",
@@ -77,7 +79,7 @@ export const getSpendByCategoryOverTime = (
       },
     })
     .then((resp) => resp.data)
-    .then((data) => AggregationArray.decode(data))
+    .then((data) => t.array(Aggregation).decode(data))
     .then((ma) =>
-      isRight(ma) ? ma.right : Promise.reject("Failed to parse response")
+      isRight(ma) ? ma.right : Promise.reject(PathReporter.report(ma))
     );
