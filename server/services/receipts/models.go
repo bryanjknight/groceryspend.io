@@ -30,33 +30,33 @@ type ReceiptSummary struct {
 // ReceiptItem a parsed line item from a receipt
 type ReceiptItem struct {
 	ID              uuid.UUID `json:"ID"`
-	UnitCost        float32   `json:"UnitCost" db:"unit_cost"`
+	UnitCost        float32   `json:"UnitCost"`
 	Qty             int       `json:"Qty"`
 	Weight          float32   `json:"Weight"`
-	TotalCost       float32   `json:"TotalCost" db:"total_cost"`
+	TotalCost       float32   `json:"TotalCost"`
 	Name            string    `json:"Name"`
-	ParsedReceiptID uuid.UUID `db:"parsed_receipt_id"`
-	Category        string    `json:"Category"`
-	ContainerSize   float32   `json:"ContainerSize" db:"container_size"`
-	ContainerUnit   string    `json:"ContainerUnit" db:"container_unit"`
+	ParsedReceiptID uuid.UUID
+	Category        string  `json:"Category"`
+	ContainerSize   float32 `json:"ContainerSize"`
+	ContainerUnit   string  `json:"ContainerUnit"`
 }
 
 // ReceiptDetail a fully parsed receipt
 type ReceiptDetail struct {
 	ID               uuid.UUID      `json:"ID"`
-	OriginalURL      string         `json:"OriginalURL" json:"OriginalURL" db:"original_url"`
-	RequestTimestamp time.Time      `json:"RequestTimestmap" db:"request_timestamp"`
-	OrderNumber      string         `json:"OrderNumber" db:"order_number"`
-	OrderTimestamp   time.Time      `json:"OrderTimestamp" db:"order_timestamp"`
+	OriginalURL      string         `json:"OriginalURL"`
+	RequestTimestamp time.Time      `json:"RequestTimestmap"`
+	OrderNumber      string         `json:"OrderNumber"`
+	OrderTimestamp   time.Time      `json:"OrderTimestamp"`
 	Items            []*ReceiptItem `json:"Items"`
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes
-	SalesTax                 float32   `json:"SalesTax" db:"sales_tax"`
-	Tip                      float32   `json:"Tip"`
-	ServiceFee               float32   `json:"ServiceFee" db:"service_fee"`
-	DeliveryFee              float32   `json:"DeliveryFee" db:"delivery_fee"`
-	Discounts                float32   `json:"Discounts"`
-	UnparsedReceiptRequestID uuid.UUID `db:"unparsed_receipt_request_id"`
+	SalesTax                 float32 `json:"SalesTax"`
+	Tip                      float32 `json:"Tip"`
+	ServiceFee               float32 `json:"ServiceFee"`
+	DeliveryFee              float32 `json:"DeliveryFee"`
+	Discounts                float32 `json:"Discounts"`
+	UnparsedReceiptRequestID uuid.UUID
 	ParseReceiptRequest      *ParseReceiptRequest
 }
 

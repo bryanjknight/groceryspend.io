@@ -196,7 +196,16 @@ func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID
 	// two queries - #1, get the parsed receipt
 	sql := `
 		SELECT
-			pr.*, urr.original_url, urr.request_timestamp
+			pr.ID,
+			urr.original_url as OriginalURL,
+			urr.request_timestamp as RequestTimestamp,
+			pr.order_number as OrderNumber,
+			pr.order_timestamp as OrderTimestamp,
+			pr.sales_tax as SalesTax,
+			pr.tip as Tip,
+			pr.service_fee as ServiceFee,
+			pr.delivery_fee as DeliveryFee,
+			pr.discounts as Discounts
 		FROM parsed_receipts pr
 		INNER JOIN unparsed_receipt_requests urr ON
 			pr.unparsed_receipt_request_id = urr.id
@@ -213,7 +222,15 @@ func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID
 	// #2 - get items
 	sql = `
 		SELECT
-			pi.*
+			pi.ID,
+			pi.unit_cost as UnitCost,
+			pi.qty as Qty,
+			pi.weight as Weight,
+			pi.total_cost as TotalCost,
+			pi.name as Name,
+			pi.category as Category,
+			pi.container_size as ContainerSize,
+			pi.container_unit as ContainerUnit
 		FROM parsed_items pi
 		WHERE pi.parsed_receipt_id = $1
 	`
