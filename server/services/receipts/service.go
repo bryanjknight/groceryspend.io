@@ -3,7 +3,10 @@ package receipts
 import "groceryspend.io/server/services/categorize"
 
 // HandleReceiptRequest handles the process of parsing a receipt and saving it
-func HandleReceiptRequest(receiptRequest ParseReceiptRequest, repo ReceiptRepository, categorizeClient categorize.Client) error {
+func HandleReceiptRequest(
+	receiptRequest ParseReceiptRequest,
+	repo ReceiptRepository,
+	categorizeClient categorize.Client) error {
 	receipt, err := ParseReceipt(receiptRequest)
 	if err != nil {
 		return err
