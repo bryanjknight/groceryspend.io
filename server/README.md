@@ -10,10 +10,8 @@ This directory holds the following business logic:
 We use Postgres for all of our data storage needs
 
 ## Dev Tools
-* `sqlc`: `brew install sqlc`
-  * Deprecated, will move `users` to `sqlx`
 * `golang-migrate`: `brew install golang-migrate`
-* `pact-provider-verifier`: `gem install pact-provider-verifier`
+
 ```
 # For CICD
 - name: Install golang-migrate
