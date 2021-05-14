@@ -33,7 +33,7 @@ export const getReceipts = (params: GetReceiptsParams) => (
     .then((resp) => resp.data)
     .then((data) => t.array(ReceiptSummary).decode(data))
     .then((ma) =>
-      isRight(ma) ? ma.right : Promise.reject(PathReporter.report(ma))
+      isRight(ma) ? ma.right : Promise.reject(new Error(PathReporter.report(ma).join("; ")))
     );
 
 export interface GetReceiptDetailsParams extends PactTestable {
@@ -57,7 +57,7 @@ export const getReceiptDetails = (params: GetReceiptDetailsParams) => (
     .then((resp) => resp.data)
     .then((data) => ReceiptDetail.decode(data))
     .then((ma) =>
-      isRight(ma) ? ma.right : Promise.reject(PathReporter.report(ma))
+      isRight(ma) ? ma.right : Promise.reject(new Error(PathReporter.report(ma).join("; ")))
     );
 
 // fetch analytics
@@ -81,5 +81,5 @@ export const getSpendByCategoryOverTime = (
     .then((resp) => resp.data)
     .then((data) => t.array(Aggregation).decode(data))
     .then((ma) =>
-      isRight(ma) ? ma.right : Promise.reject(PathReporter.report(ma))
+      isRight(ma) ? ma.right : Promise.reject(new Error(PathReporter.report(ma).join("; ")))
     );

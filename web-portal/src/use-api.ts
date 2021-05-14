@@ -29,11 +29,9 @@ export const useApi = <T>(
       } catch (error) {
         // TODO: hook for o11y here (e.g. sentry)
         console.error(`Error reported: ${error}`);
-
-        const newErr: Error = error.message ? error : new Error(error)
         setState({
           ...state,
-          error: newErr,
+          error,
           loading: false,
         });
       }
