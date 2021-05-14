@@ -32,25 +32,8 @@ We use Postgres for all of our data storage needs
 1. Run `migrate -path services/<service-name>/db/migration -database "postgresql://postgres:example@localhost:5432/<service-db>?sslmode=disable" -verbose up`
 
 ### Adding a change to a database
-1. run `migrate create -ext sql -dir services/<service-name>/db/migration -seq <reason-for-change>`
-### Adding queries via `sqlc`
-1. Install `sqlc` as described above
-1. Update service in `sqlc.yaml`. Below is an example:
-```yaml
-  - name: "users"
-    path: "./services/users"
-    queries: "./services/users/db/queries.sql"
-    schema: "./services/users/db/migration/"
-    engine: "postgresql"
-    emit_prepared_queries: true
-    emit_interface: false
-    emit_exact_table_names: false
-    emit_empty_slices: false
-    emit_json_tags: true
-    json_tags_case_style: "camel"
-```
-1. Run `sqlc compile` to check sql types
-1. Run `sqlc generate` to generate Go files
+1. Create a `<number>_name.down.sql and <number>_name.up.sql` in the db folder of the service
+
 
 ### Adminer
 RDBMS explorer. Connect to `localhost:18080` with the following information:
