@@ -8,11 +8,11 @@ import (
 
 // ParseReceiptRequest is an external rqeuest to parse a receipt
 type ParseReceiptRequest struct {
-	ID             uuid.UUID `json:"id"`
+	ID             uuid.UUID `json:"id,omitempty"`
 	URL            string    `json:"url"`
 	Timestamp      time.Time `json:"timestamp"`
 	Data           string    `json:"data"`
-	UserID         uuid.UUID `json:"userId"`
+	UserID         uuid.UUID `json:"userId,omitempty"`
 	ReceiptSummary *ReceiptSummary
 	// TODO: have a status flag
 }

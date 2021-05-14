@@ -8,6 +8,7 @@ import {
 import { UserInfo } from "../lib/auth";
 import { useEffect, useState } from "react";
 import { BackgroundMessageRequest } from "../background";
+import { ParseReceiptRequest } from "../models";
 
 const browser = getBrowserInstance();
 
@@ -33,11 +34,11 @@ export const App = (props: AppProps): JSX.Element => {
     const handleContentScriptResponse = (resp: ExtractDomResponse) => {
       fireMessage<BackgroundMessageRequest, string>({
         action: "SEND",
-        data: {
+        data: new ParseReceiptRequest({
           url: resp.url,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
           data: resp.dom,
-        },
+        }),
       }).then((resp) => {
         alert(resp);
       });

@@ -27,6 +27,10 @@ push:
 	docker tag server:$(DOCKER_TAG) groceryspend/server:$(DOCKER_TAG)
 	docker push groceryspend/server:$(DOCKER_TAG)
 
+export-ext-model:
+	BROWSER_PROJECT_DIR=../browser-extension go run cmd/typescriptify/browser_ext/export.go
+
+
 export-portal-model:
 	PORTAL_PROJECT_DIR=../web-portal go run cmd/typescriptify/portal/export.go
 
