@@ -102,6 +102,8 @@ browser.runtime.onMessage.addListener(
         .then((resp) => {
           if (resp.error) {
             sendResponse(resp.error.message);
+          } else if (resp.data && resp.data.error) {
+            sendResponse(resp.data.error);
           } else {
             sendResponse("Success");
           }
