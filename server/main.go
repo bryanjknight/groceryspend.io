@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -15,12 +13,7 @@ import (
 
 func main() {
 
-	// load config from env by default, use NO_LOAD_ENV_FILE to use supplied env
-	if _, noLoadEnvFile := os.LookupEnv("NO_LOAD_ENV_FILE"); !noLoadEnvFile {
-		if err := utils.LoadFromDefaultEnvFile(); err != nil {
-			panic("Unable to load .env file")
-		}
-	}
+	utils.InitializeEnvVars()
 
 	r := gin.Default()
 
@@ -46,8 +39,13 @@ func main() {
 	}))
 
 	// create repos
-	receiptsRepo := receipts.NewPostgresReceiptRepository()
+	receiptsRepo := receipts.NewDefaultReceiptRepository()
 	categorizeClient := categorize.NewDefaultClient()
+
+	// if desired, run process receipts in the same process
+	if utils.GetOsValueAsBoolean("RECEIPTS_RUN_WORKER_IN_PROCESS") {
+		go receipts.ProcessReceiptRequests("server-process-worker")
+	}
 
 	receipts.ReceiptRoutes(r, receiptsRepo, categorizeClient)
 	analytics.Routes(r, receiptsRepo)

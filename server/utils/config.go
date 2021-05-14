@@ -63,3 +63,13 @@ func GetOsValueAsDuration(key string) time.Duration {
 	}
 	return val
 }
+
+// InitializeEnvVars checks to see if an env file is the source of secrets
+func InitializeEnvVars() {
+	// load config from env by default, use NO_LOAD_ENV_FILE to use supplied env
+	if _, noLoadEnvFile := os.LookupEnv("NO_LOAD_ENV_FILE"); !noLoadEnvFile {
+		if err := LoadFromDefaultEnvFile(); err != nil {
+			panic("Unable to load .env file")
+		}
+	}
+}

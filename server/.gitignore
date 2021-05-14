@@ -1,4 +1,11 @@
-docker_data/pgdata
+# hack to persist folders and ignore the contents except for the placeholders
+docker_data/pgdata/
+docker_data/rabbitmq/*
+!docker_data/PLACEHOLDER.md
+!docker_data/rabbitmq/PLACEHOLDER.md
+
+# sometimes if the debugger is running
+__debug_bin
 
 # never check in actual passwords
 .env

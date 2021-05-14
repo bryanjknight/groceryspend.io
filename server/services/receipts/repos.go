@@ -2,7 +2,9 @@ package receipts
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"database/sql"
@@ -13,6 +15,8 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/streadway/amqp"
+
 	"groceryspend.io/server/utils"
 )
 
@@ -25,25 +29,69 @@ type ReceiptRepository interface {
 	AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error)
 }
 
-// PostgresReceiptRepository is an implementation of the receipt datastore using postgres
-type PostgresReceiptRepository struct {
-	DbConnection *sqlx.DB
+// DefaultReceiptRepository is an implementation of the receipt datastore using postgres and rabbitmq
+type DefaultReceiptRepository struct {
+	DbConnection    *sqlx.DB
+	RabbitMqConn    *amqp.Connection // do i need this?
+	RabbitMqChannel *amqp.Channel
+	RabbitMqQueue   *amqp.Queue // maybe I just need the name?
+	RabbitMqDLQ     *amqp.Queue // maybe I just need the name?
 }
 
-// NewPostgresReceiptRepository creates a new PostgresUserRepo
-func NewPostgresReceiptRepository() *PostgresReceiptRepository {
+// NewDefaultReceiptRepository creates a new PostgresUserRepo
+func NewDefaultReceiptRepository() *DefaultReceiptRepository {
 	dbConn, err := sqlx.Open("postgres", utils.GetOsValue("RECEIPTS_POSTGRES_CONN_STR"))
 
 	if err != nil {
-		panic("failed to connect to postgres db for users")
+		panic("failed to connect to postgres db for receipts")
 	}
 
-	retval := PostgresReceiptRepository{DbConnection: dbConn}
+	conn, err := amqp.Dial(utils.GetOsValue("RECEIPTS_RABBITMQ_CONN_STR"))
+	if err != nil {
+		log.Fatalf("failed to connect to rabbit mq: %s", err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to connect to open channel: %s", err)
+	}
+
+	q, err := ch.QueueDeclare(
+		utils.GetOsValue("RECEIPTS_RABBITMQ_WORK_QUEUE"), // name
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		panic("failed to declare queue")
+	}
+
+	dlq, err := ch.QueueDeclare(
+		utils.GetOsValue("RECEIPTS_RABBITMQ_DLQ"), // name
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		panic("failed to declare queue")
+	}
+
+	retval := DefaultReceiptRepository{
+		DbConnection:    dbConn,
+		RabbitMqConn:    conn,
+		RabbitMqChannel: ch,
+		RabbitMqQueue:   &q,
+		RabbitMqDLQ:     &dlq,
+	}
 	return &retval
 }
 
 // SaveReceipt store parsed receipt to database
-func (r *PostgresReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
+func (r *DefaultReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 
 	tx, err := r.DbConnection.BeginTx(context.Background(), &sql.TxOptions{Isolation: 0})
 	if err != nil {
@@ -128,7 +176,7 @@ func saveParsedItem(tx *sql.Tx, prID uuid.UUID, pi *ReceiptItem) error {
 }
 
 // SaveReceiptRequest store the receipt request in the database
-func (r *PostgresReceiptRepository) SaveReceiptRequest(request *ParseReceiptRequest) error {
+func (r *DefaultReceiptRepository) SaveReceiptRequest(request *ParseReceiptRequest) error {
 	sql := `
 	INSERT INTO unparsed_receipt_requests (
 		user_id, original_url, request_timestamp, raw_html
@@ -154,11 +202,29 @@ func (r *PostgresReceiptRepository) SaveReceiptRequest(request *ParseReceiptRequ
 	}
 	request.ID = urrID
 
+	body, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	err = r.RabbitMqChannel.Publish(
+		"",                   // exchange
+		r.RabbitMqQueue.Name, // routing key
+		false,                // mandatory
+		false,                // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // GetReceipts return all receipts for the given user
-func (r *PostgresReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ReceiptSummary, error) {
+func (r *DefaultReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ReceiptSummary, error) {
 	retval := []*ReceiptSummary{}
 	sql := `
 		SELECT
@@ -190,7 +256,7 @@ func (r *PostgresReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ReceiptSum
 }
 
 // GetReceiptDetail return specific receipt details
-func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ReceiptDetail, error) {
+func (r *DefaultReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ReceiptDetail, error) {
 	retval := ReceiptDetail{}
 
 	// two queries - #1, get the parsed receipt
@@ -253,7 +319,7 @@ func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID
 }
 
 // AggregateSpendByCategoryOverTime get spend by category over time
-func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
+func (r *DefaultReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
 	sql := `
 		select sum(total_cost) as value, category
 		from parsed_items pi

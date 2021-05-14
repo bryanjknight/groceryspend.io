@@ -65,8 +65,6 @@ func handleReceiptDetail(repo ReceiptRepository) gin.HandlerFunc {
 	return fn
 }
 
-// TODO: refactor so the logic is more reusable (e.g. in a client layer). The router should only be responible for
-//			 parsing the request and passing the appropriate response
 func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Client) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
@@ -101,40 +99,8 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 			return
 		}
 
-		receipt, err := ParseReceipt(receiptRequest)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}
-
-		// categorize the items
-		for _, item := range receipt.Items {
-			itemNames := []string{item.Name}
-			itemToCat := make(map[string]string)
-
-			err = categorizeClient.GetCategoryForItems(itemNames, &itemToCat)
-			if err != nil {
-				// m.Error(err.Error())
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": err.Error(),
-				})
-			}
-			item.Category = itemToCat[item.Name]
-		}
-
-		receipt.UnparsedReceiptRequestID = receiptRequest.ID
-
-		err = repo.SaveReceipt(&receipt)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-		}
-
 		c.JSON(http.StatusAccepted, gin.H{
-			"id": receipt.ID.String(),
+			"id": receiptRequest.ID.String(),
 		})
 
 	}

@@ -15,6 +15,7 @@ type ParseReceiptRequest struct {
 	UserID         uuid.UUID `json:"userId,omitempty"`
 	ReceiptSummary *ReceiptSummary
 	// TODO: have a status flag
+	// TODO: have a type (e.g. html, image, etc)
 }
 
 // ReceiptSummary is a summary of a receipt that has been processed

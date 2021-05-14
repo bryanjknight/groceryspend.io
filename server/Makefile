@@ -18,10 +18,14 @@ integration-test:
 
 run:
 	docker compose up -d
+	make migrate-receipts-up
+	make migrate-user-up
 	go run main.go
 
 clean:
 	rm -rf docker_data/pgdata/
+	rm -rf docker_data/rabbitmq/mnesia
+	rm -f docker_data/rabbitmq/.erlang.cookie
 
 push:
 	docker tag server:$(DOCKER_TAG) groceryspend/server:$(DOCKER_TAG)
