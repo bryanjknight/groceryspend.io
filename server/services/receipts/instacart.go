@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"golang.org/x/net/html"
+	"groceryspend.io/server/utils"
 )
 
 // InstacartTipTaxesFees container of non-item charges
@@ -52,7 +53,7 @@ func parseOrderTime(li *html.Node) (time.Time, error) {
 
 }
 
-func parseLineItem(li *html.Node) (ParsedItem, error) {
+func parseLineItem(li *html.Node) (ReceiptItem, error) {
 	// this is where assumptions are made, and thus the most likely
 	// part to fail. We ASSUME that each line item is wrapped in one div, which then has two
 	// separate divs: one for the description the second for the qty/weight and the final price
@@ -66,22 +67,22 @@ func parseLineItem(li *html.Node) (ParsedItem, error) {
 	descriptionPTags := GetElementsByTagName(descriptionDiv, "p")
 
 	if len(descriptionPTags) < 2 {
-		return ParsedItem{}, errors.New("failed to retrieve description tags")
+		return ReceiptItem{}, errors.New("failed to retrieve description tags")
 	}
 
 	name := descriptionPTags[0].FirstChild.Data
 	unitPriceAndContainerSize := descriptionPTags[1].FirstChild.Data
 	tmpSlice := strings.Split(unitPriceAndContainerSize, "•")
-	unitPrice, err := ParseStringToUSDAmount(tmpSlice[0])
+	unitPrice, err := utils.ParseStringToUSDAmount(tmpSlice[0])
 	if err != nil {
-		return ParsedItem{}, errors.New("failed to parse Unit Price")
+		return ReceiptItem{}, errors.New("failed to parse Unit Price")
 	}
 
 	qtyDiv := topLevelDiv.LastChild
 	qtyPTags := GetElementsByTagName(qtyDiv, "p")
 
 	if len(qtyPTags) < 2 {
-		return ParsedItem{}, errors.New("failed to retrieve qty tags")
+		return ReceiptItem{}, errors.New("failed to retrieve qty tags")
 	}
 
 	qtyString := qtyPTags[0].FirstChild.Data
@@ -89,12 +90,12 @@ func parseLineItem(li *html.Node) (ParsedItem, error) {
 	if err != nil {
 		qty = 0
 	}
-	totalPrice, err := ParseStringToUSDAmount(qtyPTags[1].FirstChild.Data)
+	totalPrice, err := utils.ParseStringToUSDAmount(qtyPTags[1].FirstChild.Data)
 	if err != nil {
-		return ParsedItem{}, errors.New("failed to parse total price")
+		return ReceiptItem{}, errors.New("failed to parse total price")
 	}
 
-	retval := ParsedItem{}
+	retval := ReceiptItem{}
 	retval.Name = name
 	retval.Qty = qty
 	retval.UnitCost = unitPrice
@@ -103,9 +104,9 @@ func parseLineItem(li *html.Node) (ParsedItem, error) {
 	return retval, nil
 }
 
-func parseItemsFound(ul *html.Node) ([]*ParsedItem, error) {
+func parseItemsFound(ul *html.Node) ([]*ReceiptItem, error) {
 
-	retval := []*ParsedItem{}
+	retval := []*ReceiptItem{}
 
 	// iterate through each item
 	for li := ul.FirstChild; li != nil; li = li.NextSibling {
@@ -119,8 +120,8 @@ func parseItemsFound(ul *html.Node) ([]*ParsedItem, error) {
 	return retval, nil
 }
 
-func parseReplacementsAndRefunded(children []*html.Node) ([]*ParsedItem, error) {
-	retval := []*ParsedItem{}
+func parseReplacementsAndRefunded(children []*html.Node) ([]*ReceiptItem, error) {
+	retval := []*ReceiptItem{}
 
 	// if there's more than 2, then we have either
 	// replacements
@@ -177,7 +178,7 @@ func parseTaxTipFees(sectionDiv *html.Node) (InstacartTipTaxesFees, error) {
 		}
 
 		name := pTags[0].FirstChild.Data
-		cost, err := ParseStringToUSDAmount(pTags[1].FirstChild.Data)
+		cost, err := utils.ParseStringToUSDAmount(pTags[1].FirstChild.Data)
 		if err != nil {
 			println("Unable to parse %v as a money value, skipping", pTags[1].FirstChild.Data)
 			continue
@@ -208,11 +209,11 @@ func parseTaxTipFees(sectionDiv *html.Node) (InstacartTipTaxesFees, error) {
 }
 
 // ParseInstacartHTMLReceipt parse an instacart HTML receipt
-func ParseInstacartHTMLReceipt(doc *html.Node) (ParsedReceipt, error) {
+func ParseInstacartHTMLReceipt(doc *html.Node) (ReceiptDetail, error) {
 	// find the "main" tag
 	mainNodes := GetElementsByTagName(doc, "main")
 	if len(mainNodes) != 1 {
-		return ParsedReceipt{}, fmt.Errorf("expected 1 main node, got %v", len(mainNodes))
+		return ReceiptDetail{}, fmt.Errorf("expected 1 main node, got %v", len(mainNodes))
 	}
 
 	mainNode := mainNodes[0]
@@ -227,13 +228,13 @@ func ParseInstacartHTMLReceipt(doc *html.Node) (ParsedReceipt, error) {
 	itemsFound, err := parseItemsFound(children[1])
 	if err != nil {
 		// this is not recoverable, so it implies a parsing issue
-		return ParsedReceipt{}, err
+		return ReceiptDetail{}, err
 	}
 
 	replacements, err := parseReplacementsAndRefunded(children)
 	if err != nil {
 		// this is not recoverable, so it implies a parsing issue
-		return ParsedReceipt{}, err
+		return ReceiptDetail{}, err
 	}
 
 	itemsFound = append(itemsFound, replacements...)
@@ -243,17 +244,17 @@ func ParseInstacartHTMLReceipt(doc *html.Node) (ParsedReceipt, error) {
 	taxTipFeesDiv := mainNode.Parent.NextSibling.FirstChild
 	taxTipFees, err := parseTaxTipFees(taxTipFeesDiv)
 	if err != nil {
-		return ParsedReceipt{}, err
+		return ReceiptDetail{}, err
 	}
 
 	// get order timestamp
 	orderTimestamp, err := parseOrderTime(doc)
 	if err != nil {
-		return ParsedReceipt{}, err
+		return ReceiptDetail{}, err
 	}
 
-	retval := ParsedReceipt{}
-	retval.ParsedItems = itemsFound
+	retval := ReceiptDetail{}
+	retval.Items = itemsFound
 	retval.DeliveryFee = taxTipFees.DeliveryFee
 	retval.SalesTax = taxTipFees.SalesTax
 	retval.ServiceFee = taxTipFees.ServiceFee

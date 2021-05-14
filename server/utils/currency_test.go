@@ -1,4 +1,4 @@
-package receipts
+package utils
 
 import (
 	"testing"

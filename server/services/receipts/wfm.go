@@ -7,6 +7,6 @@ import (
 )
 
 // ParseWfmHTMLRecipt parse a Whole Foods receipt
-func ParseWfmHTMLRecipt(doc *html.Node) (ParsedReceipt, error) {
-	return ParsedReceipt{}, errors.New("not implemented")
+func ParseWfmHTMLRecipt(doc *html.Node) (ReceiptDetail, error) {
+	return ReceiptDetail{}, errors.New("not implemented")
 }

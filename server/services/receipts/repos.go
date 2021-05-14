@@ -16,18 +16,12 @@ import (
 	"groceryspend.io/server/utils"
 )
 
-// AggregatedCategory An aggregation of spend by category
-type AggregatedCategory struct {
-	Category string
-	Value    float32
-}
-
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
-	SaveReceipt(receipt *ParsedReceipt) error
-	SaveReceiptRequest(request *UnparsedReceiptRequest) error
-	GetReceipts(user uuid.UUID) ([]*ParsedReceipt, error)
-	GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ParsedReceipt, error)
+	SaveReceipt(receipt *ReceiptDetail) error
+	SaveReceiptRequest(request *ParseReceiptRequest) error
+	GetReceipts(user uuid.UUID) ([]*ReceiptSummary, error)
+	GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ReceiptDetail, error)
 	AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error)
 }
 
@@ -49,7 +43,7 @@ func NewPostgresReceiptRepository() *PostgresReceiptRepository {
 }
 
 // SaveReceipt store parsed receipt to database
-func (r *PostgresReceiptRepository) SaveReceipt(receipt *ParsedReceipt) error {
+func (r *PostgresReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 
 	tx, err := r.DbConnection.BeginTx(context.Background(), &sql.TxOptions{Isolation: 0})
 	if err != nil {
@@ -86,7 +80,7 @@ func (r *PostgresReceiptRepository) SaveReceipt(receipt *ParsedReceipt) error {
 	receipt.ID = prID
 
 	// now go through each parsed item and save those, noting the parsed
-	for _, pi := range receipt.ParsedItems {
+	for _, pi := range receipt.Items {
 		err = saveParsedItem(tx, prID, pi)
 		if err != nil {
 			tx.Rollback()
@@ -105,7 +99,7 @@ func (r *PostgresReceiptRepository) SaveReceipt(receipt *ParsedReceipt) error {
 
 }
 
-func saveParsedItem(tx *sql.Tx, prID uuid.UUID, pi *ParsedItem) error {
+func saveParsedItem(tx *sql.Tx, prID uuid.UUID, pi *ReceiptItem) error {
 	sql := `
 	INSERT INTO parsed_items (
 		name, total_cost, parsed_receipt_id, category, unit_cost, qty, weight, container_size, container_unit
@@ -134,7 +128,7 @@ func saveParsedItem(tx *sql.Tx, prID uuid.UUID, pi *ParsedItem) error {
 }
 
 // SaveReceiptRequest store the receipt request in the database
-func (r *PostgresReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptRequest) error {
+func (r *PostgresReceiptRepository) SaveReceiptRequest(request *ParseReceiptRequest) error {
 	sql := `
 	INSERT INTO unparsed_receipt_requests (
 		user_id, original_url, request_timestamp, raw_html
@@ -148,10 +142,10 @@ func (r *PostgresReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptR
 	RETURNING id
 	`
 	urr := r.DbConnection.QueryRowContext(context.Background(), sql,
-		request.UserUUID,
-		request.OriginalURL,
-		request.RequestTimestamp,
-		request.RawHTML,
+		request.UserID,
+		request.URL,
+		request.Timestamp,
+		request.Data,
 	)
 	var urrID uuid.UUID
 	err := urr.Scan(&urrID)
@@ -164,11 +158,15 @@ func (r *PostgresReceiptRepository) SaveReceiptRequest(request *UnparsedReceiptR
 }
 
 // GetReceipts return all receipts for the given user
-func (r *PostgresReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ParsedReceipt, error) {
-	retval := []*ParsedReceipt{}
+func (r *PostgresReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ReceiptSummary, error) {
+	retval := []*ReceiptSummary{}
 	sql := `
 		SELECT
-			pr.*
+			pr.id as ID,
+			urr.user_id as UserUUID,
+			pr.order_timestamp as OrderTimestamp, 
+			urr.original_url as OriginalURL, 
+			urr.request_timestamp as RequestTimestamp
 		FROM parsed_receipts pr
 		INNER JOIN unparsed_receipt_requests urr ON
 			pr.unparsed_receipt_request_id = urr.id
@@ -182,7 +180,7 @@ func (r *PostgresReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ParsedRece
 	defer rows.Close()
 
 	for rows.Next() {
-		var tmp ParsedReceipt
+		var tmp ReceiptSummary
 		rows.StructScan(&tmp)
 		retval = append(retval, &tmp)
 	}
@@ -192,13 +190,13 @@ func (r *PostgresReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ParsedRece
 }
 
 // GetReceiptDetail return specific receipt details
-func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ParsedReceipt, error) {
-	retval := ParsedReceipt{}
+func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ReceiptDetail, error) {
+	retval := ReceiptDetail{}
 
 	// two queries - #1, get the parsed receipt
 	sql := `
 		SELECT
-			pr.*
+			pr.*, urr.original_url, urr.request_timestamp
 		FROM parsed_receipts pr
 		INNER JOIN unparsed_receipt_requests urr ON
 			pr.unparsed_receipt_request_id = urr.id
@@ -225,15 +223,15 @@ func (r *PostgresReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID
 	}
 	defer rows.Close()
 
-	items := []*ParsedItem{}
+	items := []*ReceiptItem{}
 	for rows.Next() {
-		tmp := ParsedItem{}
+		tmp := ReceiptItem{}
 		rows.StructScan(&tmp)
 		items = append(items, &tmp)
 	}
 
 	// add items to the parsed receipt
-	retval.ParsedItems = items
+	retval.Items = items
 	return &retval, nil
 }
 
@@ -271,6 +269,5 @@ func (r *PostgresReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid
 		retval = append(retval, &catSum)
 	}
 
-	println(fmt.Sprintf("Num of rows returned: %v", len(retval)))
 	return retval, nil
 }

@@ -34,9 +34,9 @@ export function Receipts(): JSX.Element {
       <tbody>
         {data?.map((receipt: ReceiptSummary, i: number) => (
           <tr key={receipt.ID}>
-            <td>{receipt.OrderTimestamp}</td>
+            <td>{receipt.OrderTimestamp.toDateString()}</td>
             <td>
-              <a href={receipt.OrderNumber}>Link to Original Order</a>
+              <a href={receipt.OriginalURL}>Link to Original Order</a>
             </td>
             <td>
               <Link

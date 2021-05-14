@@ -3,7 +3,7 @@ import React from "react";
 import { Loading } from "./Loading";
 import { Error } from "./Error";
 import { RouteComponentProps } from "react-router-dom";
-import { Item, ReceiptDetail } from "./models";
+import { ReceiptItem, ReceiptDetail } from "./models";
 import { getReceiptDetails } from "./api";
 
 export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
@@ -40,7 +40,7 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        {data.ParsedItems?.map((item: Item, i: number) => (
+        {data.Items?.map((item: ReceiptItem, i: number) => (
           <tr key={item.ID}>
             <td>{item.Name}</td>
             <td>${item.TotalCost}</td>

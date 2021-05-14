@@ -8,29 +8,29 @@ import (
 )
 
 // ParseReceipt given a request, try to parse the receipt into something machine readable
-func ParseReceipt(request UnparsedReceiptRequest) (ParsedReceipt, error) {
+func ParseReceipt(request ParseReceiptRequest) (ReceiptDetail, error) {
 
 	// parse html
-	dataReader := strings.NewReader(request.RawHTML)
+	dataReader := strings.NewReader(request.Data)
 	parsedHTML, err := html.Parse(dataReader)
 	if err != nil {
-		return ParsedReceipt{}, err
+		return ReceiptDetail{}, err
 	}
-	if strings.Contains(request.OriginalURL, "instacart.com") {
+	if strings.Contains(request.URL, "instacart.com") {
 
 		receipt, err := ParseInstacartHTMLReceipt(parsedHTML)
 		if err != nil {
-			return ParsedReceipt{}, err
+			return ReceiptDetail{}, err
 		}
 
 		// get the order number from the URL
-		splitURL := strings.Split(request.OriginalURL, "/")
+		splitURL := strings.Split(request.URL, "/")
 		receipt.OrderNumber = splitURL[len(splitURL)-1]
 		return receipt, nil
 	}
-	if strings.Contains(request.OriginalURL, "amazon.com") {
+	if strings.Contains(request.URL, "amazon.com") {
 		return ParseWfmHTMLRecipt(parsedHTML)
 	}
 
-	return ParsedReceipt{}, errors.New("unable to match URL with parser")
+	return ReceiptDetail{}, errors.New("unable to match URL with parser")
 }

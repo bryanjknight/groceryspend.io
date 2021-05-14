@@ -76,15 +76,15 @@ func TestInstacartReceipt(t *testing.T) {
 		}
 
 		expectedTotalItems := test.ExpectedTotalItems
-		if len(receipt.ParsedItems) != expectedTotalItems {
-			t.Errorf("Expected %v items, got %v", expectedTotalItems, len(receipt.ParsedItems))
+		if len(receipt.Items) != expectedTotalItems {
+			t.Errorf("Expected %v items, got %v", expectedTotalItems, len(receipt.Items))
 		}
 
 		// sum the parsed items to get the subtotal
 		expectedSubtotal := test.ExpectedSubtotal
 
 		actualSubtotal := float32(0.0)
-		for _, item := range receipt.ParsedItems {
+		for _, item := range receipt.Items {
 			actualSubtotal += item.TotalCost
 		}
 

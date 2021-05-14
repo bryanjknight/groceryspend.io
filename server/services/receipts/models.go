@@ -1,62 +1,67 @@
 package receipts
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
-
-	"strings"
 )
 
-// ParseStringToUSDAmount parse a string value into a float32 assuming the value is something like $123.45
-func ParseStringToUSDAmount(s string) (float32, error) {
-	// strip the $ out, convert to a float32
-	sNoDollarSign := strings.ReplaceAll(s, "$", "")
-	sTrimmedNoDollarSign := strings.TrimSpace(sNoDollarSign)
-	val, err := strconv.ParseFloat(sTrimmedNoDollarSign, 32)
-	if err != nil {
-		return 0, err
-	}
-	return float32(val), nil
+// ParseReceiptRequest is an external rqeuest to parse a receipt
+type ParseReceiptRequest struct {
+	ID             uuid.UUID `json:"id"`
+	URL            string    `json:"url"`
+	Timestamp      time.Time `json:"timestamp"`
+	Data           string    `json:"data"`
+	UserID         uuid.UUID `json:"userId"`
+	ReceiptSummary *ReceiptSummary
+	// TODO: have a status flag
 }
 
-// UnparsedReceiptRequest a request to parse a receipt
-type UnparsedReceiptRequest struct {
-	ID               uuid.UUID
-	UserUUID         uuid.UUID `db:"user_uuid"`
-	OriginalURL      string    `db:"original_url"`
-	RequestTimestamp time.Time `db:"request_timestamp"`
-	RawHTML          string    `db:"raw_html"`
-	ParsedReceipt    *ParsedReceipt
+// ReceiptSummary is a summary of a receipt that has been processed
+type ReceiptSummary struct {
+	ID                  uuid.UUID `json:"ID"`
+	UserUUID            uuid.UUID `json:"UserUUID"`
+	OriginalURL         string    `json:"OriginalURL"`
+	RequestTimestamp    time.Time `json:"RequestTimestamp"`
+	OrderTimestamp      time.Time `json:"OrderTimestamp"`
+	ParseReceiptRequest *ParseReceiptRequest
 }
 
-// ParsedItem a parsed line item from a receipt
-type ParsedItem struct {
-	ID              uuid.UUID
-	UnitCost        float32 `db:"unit_cost"`
-	Qty             int
-	Weight          float32
-	TotalCost       float32 `db:"total_cost"`
-	Name            string
+// ReceiptItem a parsed line item from a receipt
+type ReceiptItem struct {
+	ID              uuid.UUID `json:"ID"`
+	UnitCost        float32   `json:"UnitCost" db:"unit_cost"`
+	Qty             int       `json:"Qty"`
+	Weight          float32   `json:"Weight"`
+	TotalCost       float32   `json:"TotalCost" db:"total_cost"`
+	Name            string    `json:"Name"`
 	ParsedReceiptID uuid.UUID `db:"parsed_receipt_id"`
-	Category        string
-	ContainerSize   float32 `db:"container_size"`
-	ContainerUnit   string  `db:"container_unit"`
+	Category        string    `json:"Category"`
+	ContainerSize   float32   `json:"ContainerSize" db:"container_size"`
+	ContainerUnit   string    `json:"ContainerUnit" db:"container_unit"`
 }
 
-// ParsedReceipt a fully parsed receipt
-type ParsedReceipt struct {
-	ID             uuid.UUID
-	OrderNumber    string    `db:"order_number"`
-	OrderTimestamp time.Time `db:"order_timestamp"`
-	ParsedItems    []*ParsedItem
+// ReceiptDetail a fully parsed receipt
+type ReceiptDetail struct {
+	ID               uuid.UUID      `json:"ID"`
+	OriginalURL      string         `json:"OriginalURL" json:"OriginalURL" db:"original_url"`
+	RequestTimestamp time.Time      `json:"RequestTimestmap" db:"request_timestamp"`
+	OrderNumber      string         `json:"OrderNumber" db:"order_number"`
+	OrderTimestamp   time.Time      `json:"OrderTimestamp" db:"order_timestamp"`
+	Items            []*ReceiptItem `json:"Items"`
 	// TODO: break out tax, tip, and fees into 1-to-many relationship
 	//			 as some jurisdictions could have multiple taxes
-	SalesTax                 float32 `db:"sales_tax"`
-	Tip                      float32
-	ServiceFee               float32 `db:"service_fee"`
-	DeliveryFee              float32 `db:"delivery_fee"`
-	Discounts                float32
+	SalesTax                 float32   `json:"SalesTax" db:"sales_tax"`
+	Tip                      float32   `json:"Tip"`
+	ServiceFee               float32   `json:"ServiceFee" db:"service_fee"`
+	DeliveryFee              float32   `json:"DeliveryFee" db:"delivery_fee"`
+	Discounts                float32   `json:"Discounts"`
 	UnparsedReceiptRequestID uuid.UUID `db:"unparsed_receipt_request_id"`
+	ParseReceiptRequest      *ParseReceiptRequest
+}
+
+// AggregatedCategory An aggregation of spend by category
+type AggregatedCategory struct {
+	Category string  `json:"Category"`
+	Value    float32 `json:"Value"`
 }

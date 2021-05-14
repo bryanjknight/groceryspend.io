@@ -27,19 +27,31 @@ push:
 	docker tag server:$(DOCKER_TAG) groceryspend/server:$(DOCKER_TAG)
 	docker push groceryspend/server:$(DOCKER_TAG)
 
+export-portal-model:
+	PORTAL_PROJECT_DIR=../web-portal go run cmd/typescriptify/portal/export.go
+
 migrate-receipts-up:
-	migrate -path services/receipts/db/migration -database "postgres://postgres:example@localhost:5432/receiptsdb?sslmode=disable" -verbose up
+	migrate \
+		-path services/receipts/db/migration \
+		-database "postgres://postgres:example@localhost:5432/receiptsdb?sslmode=disable" \
+		-verbose up
 
 migrate-receipts-down:
-	migrate -path services/receipts/db/migration -database "postgres://postgres:example@localhost:5432/receiptsdb?sslmode=disable" -verbose down
+	migrate \
+		-path services/receipts/db/migration \
+		-database "postgres://postgres:example@localhost:5432/receiptsdb?sslmode=disable" \
+		-verbose down
 
 migrate-user-up:
-	migrate -path services/users/db/migration -database "postgres://postgres:example@localhost:5432/usersdb?sslmode=disable" -verbose up
+	migrate \
+		-path services/users/db/migration \
+		-database "postgres://postgres:example@localhost:5432/usersdb?sslmode=disable" \
+		-verbose up
 
 migrate-user-down:
-	migrate -path services/users/db/migration -database "postgres://postgres:example@localhost:5432/usersdb?sslmode=disable" -verbose down
-
-sqlc-generate:
-	sqlc generate
+	migrate \
+		-path services/users/db/migration \
+		-database "postgres://postgres:example@localhost:5432/usersdb?sslmode=disable" \
+		-verbose down
 
 all: lint unit-test build
