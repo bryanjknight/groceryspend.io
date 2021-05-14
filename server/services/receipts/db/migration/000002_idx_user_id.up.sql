@@ -1,0 +1,1 @@
+CREATE INDEX idx_user_Id ON unparsed_receipt_requests (user_id) INCLUDE (id);

@@ -27,6 +27,12 @@ push:
 	docker tag server:$(DOCKER_TAG) groceryspend/server:$(DOCKER_TAG)
 	docker push groceryspend/server:$(DOCKER_TAG)
 
+migrate-receipts-up:
+	migrate -path services/receipts/db/migration -database "postgres://postgres:example@localhost:5432/receiptsdb?sslmode=disable" -verbose up
+
+migrate-receipts-down:
+	migrate -path services/receipts/db/migration -database "postgres://postgres:example@localhost:5432/receiptsdb?sslmode=disable" -verbose down
+
 migrate-user-up:
 	migrate -path services/users/db/migration -database "postgres://postgres:example@localhost:5432/usersdb?sslmode=disable" -verbose up
 
