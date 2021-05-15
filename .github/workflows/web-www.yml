@@ -26,7 +26,7 @@ jobs:
         run: |
           echo ::set-output name=sha::$(git rev-parse --short=7 ${{ github.sha }})
           echo ::set-output name=deployment::$GITHUB_WORKSPACE/infrastructure/k8s/web-www-deploy.yml
-          echo ::set-output name=run_deploy::FALSE
+          echo ::set-output name=run_deploy::TRUE
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2

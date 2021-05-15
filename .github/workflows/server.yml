@@ -27,7 +27,7 @@ jobs:
         run: |
           echo ::set-output name=sha::$(git rev-parse --short=7 ${{ github.sha }})
           echo ::set-output name=deployment::$GITHUB_WORKSPACE/infrastructure/k8s/server-deploy.yml
-          echo ::set-output name=run_deploy::FALSE
+          echo ::set-output name=run_deploy::TRUE
 
       - name: Set up Go
         uses: actions/setup-go@v2
