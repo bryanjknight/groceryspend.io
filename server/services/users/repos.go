@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	// load the postgres river
@@ -52,6 +53,7 @@ func (r *PostgresUserRepository) GetOrCreateUserByAuthProviderID(authProvider st
 	if err != nil {
 		return nil, err
 	}
+	println(fmt.Sprintf("Extracted user: %s / %s / %s", user.ID.String(), user.AuthProviderID, user.AuthSpecificID))
 
 	return &user, nil
 }
