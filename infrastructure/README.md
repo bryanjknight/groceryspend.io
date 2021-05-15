@@ -26,6 +26,7 @@ Tools
 Setup
 ---
 1. Get the k8s access config, copy it into `$HOME/.kube/config`
+1. Get the DigitalOcean API key as an environment variable `DIGITALOCEAN_ACCESS_TOKEN`
 
 Docker deploy process w/ Docker
 ---
@@ -49,6 +50,7 @@ Notes
 ---
 * IaC is not tied to a CICD pipeline as some minor changes result in the entire stack being torn down.
 * Creating an ingress creates a load balancer in DO, resulting in another $10/mo for that
+* Existing bug where null resource and user creation don't work as expected. Requires deleting the users and re-running the plan and apply
 
 To Do
 ---

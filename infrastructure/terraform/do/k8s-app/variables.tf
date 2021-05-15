@@ -37,3 +37,7 @@ variable "write_kubeconfig" {
   type    = bool
   default = false
 }
+
+variable "rabbitmq_conn_str" {
+  type = string
+}

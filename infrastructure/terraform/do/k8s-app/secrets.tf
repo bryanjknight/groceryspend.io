@@ -7,6 +7,7 @@ resource "kubernetes_secret" "server-auth" {
   data = {
     USERS_POSTGRES_CONN_STR = "postgres://users:${var.users_password}@${var.pg_host}:${var.pg_port}/usersdb"
     RECEIPTS_POSTGRES_CONN_STR = "postgres://receipts:${var.receipts_password}@${var.pg_host}:${var.pg_port}/receiptsdb"
+    RECEIPTS_RABBITMQ_CONN_STR="${var.rabbitmq_conn_str}"
   }
 
 }

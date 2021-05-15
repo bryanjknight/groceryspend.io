@@ -39,4 +39,5 @@ module "k8s-app" {
   users_password                = module.infra.users_password
   pg_host                       = module.infra.postgres_host
   pg_port                       = module.infra.postgres_port
+  rabbitmq_conn_str             = var.rabbitmq_conn_str
 }
