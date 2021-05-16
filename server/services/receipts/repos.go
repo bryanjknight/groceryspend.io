@@ -130,9 +130,9 @@ func (r *DefaultReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 
 	sql := `
 	INSERT INTO parsed_receipts (
-		order_number, order_timestamp, sales_tax, tip, service_fee, delivery_fee, discounts, unparsed_receipt_request_id
+		order_number, order_timestamp, sales_tax, tip, service_fee, delivery_fee, discounts, unparsed_receipt_request_id, subtotal_cost
 	)
-	VALUES( $1, $2, $3, $4, $5, $6, $7, $8)
+	VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)
 	ON CONFLICT (order_number) DO UPDATE SET
 		order_number = EXCLUDED.order_number,
 		order_timestamp = EXCLUDED.order_timestamp,
@@ -141,7 +141,8 @@ func (r *DefaultReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 		service_fee = EXCLUDED.service_fee,
 		delivery_fee = EXCLUDED.delivery_fee, 
 		discounts = EXCLUDED.discounts, 
-		unparsed_receipt_request_id = EXCLUDED.unparsed_receipt_request_id
+		unparsed_receipt_request_id = EXCLUDED.unparsed_receipt_request_id,
+		subtotal_cost = EXCLUDED.subtotal_cost
 	RETURNING id
 	`
 	prRS := tx.QueryRowContext(context.Background(), sql,
@@ -152,7 +153,9 @@ func (r *DefaultReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 		receipt.ServiceFee,
 		receipt.DeliveryFee,
 		receipt.Discounts,
-		receipt.UnparsedReceiptRequestID)
+		receipt.UnparsedReceiptRequestID,
+		receipt.SubtotalCost,
+	)
 	var prID uuid.UUID
 	prRS.Scan(&prID)
 	receipt.ID = prID

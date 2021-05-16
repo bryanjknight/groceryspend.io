@@ -36,12 +36,14 @@ func ProcessReceiptRequests(workerName string) {
 			err := json.Unmarshal(d.Body, &receiptRequest)
 			if err != nil {
 				log.Printf("Failed to parse message body: %s", err)
+				// TODO: Move to DLQ, don't return
 				return
 			}
 
 			err = HandleReceiptRequest(receiptRequest, repo, categorizeClient)
 			if err != nil {
-				log.Printf("Failed to parse message body: %s", err)
+				log.Printf("Failed to handle recetipt request: %s", err)
+				// TODO: Move to DLQ, don't return
 				return
 			}
 

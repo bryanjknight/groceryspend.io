@@ -38,6 +38,7 @@ export class ReceiptDetail {
     ServiceFee: number;
     DeliveryFee: number;
     Discounts: number;
+    SubtotalCost: number;
 
     constructor(source: any = {}) {
         if ('string' === typeof source) source = JSON.parse(source);
@@ -52,6 +53,7 @@ export class ReceiptDetail {
         this.ServiceFee = source["ServiceFee"];
         this.DeliveryFee = source["DeliveryFee"];
         this.Discounts = source["Discounts"];
+        this.SubtotalCost = source["SubtotalCost"];
     }
 
 	convertValues(a: any, classs: any, asMap: boolean = false): any {

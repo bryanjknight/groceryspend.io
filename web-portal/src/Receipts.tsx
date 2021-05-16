@@ -39,7 +39,7 @@ export function Receipts(): JSX.Element {
             <td>
               <a href={receipt.OriginalURL}>Link to Original Order</a>
             </td>
-            <td>{receipt.TotalCost}</td>
+            <td>${receipt.TotalCost.toFixed(2)}</td>
             <td>
               <Link
                 to={{

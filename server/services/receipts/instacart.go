@@ -253,6 +253,11 @@ func ParseInstacartHTMLReceipt(doc *html.Node) (ReceiptDetail, error) {
 		return ReceiptDetail{}, err
 	}
 
+	subtotal := float32(0.0)
+	for _, item := range itemsFound {
+		subtotal += item.TotalCost
+	}
+
 	retval := ReceiptDetail{}
 	retval.Items = itemsFound
 	retval.DeliveryFee = taxTipFees.DeliveryFee
@@ -261,6 +266,7 @@ func ParseInstacartHTMLReceipt(doc *html.Node) (ReceiptDetail, error) {
 	retval.Discounts = taxTipFees.Discounts
 	retval.Tip = taxTipFees.Tip
 	retval.OrderTimestamp = orderTimestamp
+	retval.SubtotalCost = subtotal
 
 	return retval, nil
 }

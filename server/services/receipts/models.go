@@ -58,6 +58,7 @@ type ReceiptDetail struct {
 	ServiceFee               float32 `json:"ServiceFee"`
 	DeliveryFee              float32 `json:"DeliveryFee"`
 	Discounts                float32 `json:"Discounts"`
+	SubtotalCost             float32 `json:"SubtotalCost"`
 	UnparsedReceiptRequestID uuid.UUID
 	ParseReceiptRequest      *ParseReceiptRequest
 }
