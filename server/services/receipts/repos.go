@@ -33,7 +33,7 @@ import (
 // ############################## //
 
 // DatabaseVersion is the desired database version for this git commit
-const DatabaseVersion = 2
+const DatabaseVersion = 3
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
@@ -262,7 +262,15 @@ func (r *DefaultReceiptRepository) GetReceipts(userID uuid.UUID) ([]*ReceiptSumm
 			urr.user_id as UserUUID,
 			pr.order_timestamp as OrderTimestamp, 
 			urr.original_url as OriginalURL, 
-			urr.request_timestamp as RequestTimestamp
+			urr.request_timestamp as RequestTimestamp,
+			(
+				pr.sales_tax +
+				pr.service_fee +
+				pr.delivery_fee +
+				pr.discounts +
+				pr.tip +
+				pr.subtotal_cost
+			) as TotalCost
 		FROM parsed_receipts pr
 		INNER JOIN unparsed_receipt_requests urr ON
 			pr.unparsed_receipt_request_id = urr.id

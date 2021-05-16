@@ -78,6 +78,7 @@ export class ReceiptSummary {
     OriginalURL: string;
     RequestTimestamp: Date;
     OrderTimestamp: Date;
+    TotalCost: number;
 
     constructor(source: any = {}) {
         if ('string' === typeof source) source = JSON.parse(source);
@@ -86,14 +87,15 @@ export class ReceiptSummary {
         this.OriginalURL = source["OriginalURL"];
         this.RequestTimestamp = new Date(source["RequestTimestamp"]);
         this.OrderTimestamp = new Date(source["OrderTimestamp"]);
+        this.TotalCost = source["TotalCost"];
     }
 }
 export class ParseReceiptRequest {
-    id: string;
+    id?: string;
     url: string;
     timestamp: Date;
     data: string;
-    userId: string;
+    userId?: string;
 
     constructor(source: any = {}) {
         if ('string' === typeof source) source = JSON.parse(source);

@@ -26,7 +26,8 @@ func handleListReceipts(repo ReceiptRepository) gin.HandlerFunc {
 
 		receipts, err := repo.GetReceipts(userID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to retrieve receipts",
 			})
 			return

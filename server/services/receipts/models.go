@@ -25,6 +25,7 @@ type ReceiptSummary struct {
 	OriginalURL         string    `json:"OriginalURL"`
 	RequestTimestamp    time.Time `json:"RequestTimestamp"`
 	OrderTimestamp      time.Time `json:"OrderTimestamp"`
+	TotalCost           float32   `json:"TotalCost"`
 	ParseReceiptRequest *ParseReceiptRequest
 }
 

@@ -28,6 +28,7 @@ export function Receipts(): JSX.Element {
         <tr>
           <th scope="col">Date</th>
           <th scope="col">Order Link</th>
+          <th scope="col">Total Cost</th>
           <th scope="col">Details</th>
         </tr>
       </thead>
@@ -38,6 +39,7 @@ export function Receipts(): JSX.Element {
             <td>
               <a href={receipt.OriginalURL}>Link to Original Order</a>
             </td>
+            <td>{receipt.TotalCost}</td>
             <td>
               <Link
                 to={{
