@@ -13,6 +13,7 @@ First Time Deployment Checklist
   - [ ] `terraform apply infra.out`
 - [ ] Restart deploys from CICD (this will deploy the deployments to k8s)
 - [ ] Deploy k8s features
+  - [ ] Update `~/.kube/config` with config from newly minted k8s cluster
   - [ ] `./infrastructure/k8s/init_deploy.sh`
 - [ ] Tie load balancer IP to DNS records via A records
   - [ ] `@`
