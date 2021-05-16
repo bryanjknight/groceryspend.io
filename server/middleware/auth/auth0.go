@@ -131,7 +131,6 @@ func NewAuth0JwtAuthMiddleware(cache *memoize.Memoizer, userClient users.Client)
 // VerifySession check the JWT to ensure it's valid still
 func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 	fn := func(c *gin.Context) {
-		println("Verifying jwt token")
 		err := m.middleware.CheckJWT(c.Writer, c.Request)
 		if err != nil {
 			// token not found
@@ -144,7 +143,6 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 		// if it's a preflight check, don't try to verify the session since the
 		// bearer token isn't sent
 		if c.Request.Method == "OPTIONS" {
-			println("returning since it's an preflight request")
 			return
 		}
 
@@ -153,7 +151,6 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 		// set the contet with the user uuid
 		// "user" is set by the auth0 CheckJWT call
 		u := c.Request.Context().Value("user")
-		println(fmt.Sprintf("User is %s", u))
 		user := u.(*jwt.Token)
 		iss := user.Claims.(jwt.MapClaims)["iss"].(string)
 		sub := user.Claims.(jwt.MapClaims)["sub"].(string)
@@ -164,7 +161,7 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 			println(fmt.Sprintf(err.Error()))
 			c.AbortWithError(500, fmt.Errorf("Failed to get user from user database"))
 		}
-		println(fmt.Sprintf("Canonical user is %s", canonicalUser))
+
 		// If we get here, everything worked and we can set the
 		// user property in context.
 		originalRequest := c.Request
@@ -172,7 +169,6 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 		newRequest := originalRequest.WithContext(context.WithValue(originalRequestCtx, AuthUserIDKey, canonicalUser.ID))
 		// Update the current request with the new context information.
 		c.Request = newRequest
-		println("done")
 
 	}
 

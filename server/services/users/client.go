@@ -1,7 +1,5 @@
 package users
 
-import "fmt"
-
 // Client is an internal mechanism for accessing the user service
 type Client interface {
 	LookupUserByAuthProvider(authProvider string, authSpecificID string) (*User, error)
@@ -24,9 +22,7 @@ func NewDefaultClient() *DefaultClient {
 
 // LookupUserByAuthProvider finds (or creates) a user based on the auth provider and auth specific ID for the user
 func (c *DefaultClient) LookupUserByAuthProvider(authProvider string, authSpecificID string) (*User, error) {
-	println("Start")
 	user, err := c.repo.GetOrCreateUserByAuthProviderID(authProvider, authSpecificID)
-	println(fmt.Sprintf("user: %s", user))
 	if err != nil {
 		return nil, err
 	}

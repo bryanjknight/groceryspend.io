@@ -2,14 +2,30 @@ package users
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
-	// load the postgres river
+	// load the postgres driver
 	_ "github.com/lib/pq"
+
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/postgres"
+
+	// load source file driver
+	_ "github.com/golang-migrate/migrate/source/file"
 
 	"groceryspend.io/server/utils"
 )
+
+// ############################## //
+// ##        WARNING           ## //
+// ## Update this to match the ## //
+// ## desired database version ## //
+// ## for this git commit      ## //
+// ############################## //
+
+// DatabaseVersion is the desired database version for this git commit
+const DatabaseVersion = 1
 
 // UserRepository contains the common access patterns for canonical users
 type UserRepository interface {
@@ -27,6 +43,22 @@ func NewPostgresUserRepository() *PostgresUserRepository {
 	if err != nil {
 		panic(err)
 	}
+
+	// run migration
+	migrationPath := "file://./services/users/db/migration"
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationPath,
+		"postgres", driver)
+	if err != nil {
+		log.Fatalf("Unable to get migration instance: %s", err)
+	}
+
+	err = m.Migrate(DatabaseVersion)
+	if err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Database migration failed: %s", err)
+	}
+
 	retval := PostgresUserRepository{db: db}
 
 	return &retval
@@ -53,7 +85,6 @@ func (r *PostgresUserRepository) GetOrCreateUserByAuthProviderID(authProvider st
 	if err != nil {
 		return nil, err
 	}
-	println(fmt.Sprintf("Extracted user: %s / %s / %s", user.ID.String(), user.AuthProviderID, user.AuthSpecificID))
 
 	return &user, nil
 }

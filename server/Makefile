@@ -18,11 +18,12 @@ integration-test:
 
 run:
 	docker compose up -d
-	make migrate-receipts-up
-	make migrate-user-up
+	scripts/wait-for localhost:5432 -- echo "PostgreSQL is up"
+	scripts/wait-for localhost:5672 -- echo "RabbitMQ is up"
 	go run main.go
 
 clean:
+	docker compose down
 	rm -rf docker_data/pgdata/
 	rm -rf docker_data/rabbitmq/mnesia
 	rm -f docker_data/rabbitmq/.erlang.cookie

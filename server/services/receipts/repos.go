@@ -9,16 +9,31 @@ import (
 
 	"database/sql"
 
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/postgres"
 	"github.com/google/uuid"
 
 	// load the postgres river
 	_ "github.com/lib/pq"
+
+	// load source file driver
+	_ "github.com/golang-migrate/migrate/source/file"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/streadway/amqp"
 
 	"groceryspend.io/server/utils"
 )
+
+// ############################## //
+// ##        WARNING           ## //
+// ## Update this to match the ## //
+// ## desired database version ## //
+// ## for this git commit      ## //
+// ############################## //
+
+// DatabaseVersion is the desired database version for this git commit
+const DatabaseVersion = 2
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
@@ -44,6 +59,21 @@ func NewDefaultReceiptRepository() *DefaultReceiptRepository {
 
 	if err != nil {
 		panic("failed to connect to postgres db for receipts")
+	}
+
+	// run migration
+	migrationPath := "file://./services/receipts/db/migration"
+	driver, err := postgres.WithInstance(dbConn.DB, &postgres.Config{})
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationPath,
+		"postgres", driver)
+	if err != nil {
+		log.Fatalf("Unable to get migration instance: %s", err)
+	}
+
+	err = m.Migrate(DatabaseVersion)
+	if err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Database migration failed: %s", err)
 	}
 
 	conn, err := amqp.Dial(utils.GetOsValue("RECEIPTS_RABBITMQ_CONN_STR"))
