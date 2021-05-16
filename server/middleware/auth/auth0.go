@@ -159,9 +159,9 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 		sub := user.Claims.(jwt.MapClaims)["sub"].(string)
 
 		auth0ID := iss + "|" + sub
-
 		canonicalUser, err := m.userClient.LookupUserByAuthProvider(utils.GetOsValue("AUTH_PROVIDER"), auth0ID)
 		if err != nil {
+			println(fmt.Sprintf(err.Error()))
 			c.AbortWithError(500, fmt.Errorf("Failed to get user from user database"))
 		}
 		println(fmt.Sprintf("Canonical user is %s", canonicalUser))
