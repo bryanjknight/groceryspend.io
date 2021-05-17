@@ -33,8 +33,11 @@ func (s *DefaultCategoryExternalService) GetCategoryForItems(items []string, tar
 	resp, err := http.Post(fmt.Sprintf("%v/%v", s.hostname, s.path), "application/json", body)
 
 	if err != nil {
+		println(fmt.Sprintf("Failed to get response from prediction service, %s", err.Error()))
 		return err
 	}
+
+	println(fmt.Sprintf("Response Code: %s", resp.Status))
 
 	defer resp.Body.Close()
 
