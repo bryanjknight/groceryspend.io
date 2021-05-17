@@ -1,6 +1,10 @@
 package receipts
 
-import "groceryspend.io/server/services/categorize"
+import (
+	"fmt"
+
+	"groceryspend.io/server/services/categorize"
+)
 
 // HandleReceiptRequest handles the process of parsing a receipt and saving it
 func HandleReceiptRequest(
@@ -9,6 +13,7 @@ func HandleReceiptRequest(
 	categorizeClient categorize.Client) error {
 	receipt, err := ParseReceipt(receiptRequest)
 	if err != nil {
+		println(fmt.Sprintf("Failed to parse receipt request %s", receiptRequest.ID.String()))
 		return err
 	}
 
@@ -19,6 +24,7 @@ func HandleReceiptRequest(
 
 		err = categorizeClient.GetCategoryForItems(itemNames, &itemToCat)
 		if err != nil {
+			println(fmt.Sprintf("Failed to get category for %s", item.Name))
 			return err
 		}
 		item.Category = itemToCat[item.Name]
@@ -27,7 +33,10 @@ func HandleReceiptRequest(
 	receipt.UnparsedReceiptRequestID = receiptRequest.ID
 
 	err = repo.SaveReceipt(&receipt)
+	if err != nil {
+		println(fmt.Sprintf("Failed to save receipt for request %s", receiptRequest.ID.String()))
+		return err
+	}
 
-	// could be nil or something
-	return err
+	return nil
 }
