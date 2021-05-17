@@ -21,6 +21,7 @@ RUN pip install six
 COPY training /src/training
 COPY web /src/web
 COPY output/categorize/model/ /data/models/categorize
+COPY data/canonical/categories.yaml /data/canonical/categories.yaml
 
 #
 # The final image we'll deploy
@@ -40,6 +41,7 @@ COPY --from=builder /data /data
 WORKDIR /src
 
 ENV CAT_MODEL=/data/models/categorize/categorize_tuple.pkl
+ENV CAT_YAML=/data/canonical/categories.yaml
 ENV FLASK_APP=web
 
 # EXPOSE 5000

@@ -12,6 +12,7 @@ requests = "==2.25.1"
 flask = "==1.1.2"
 joblib = "==1.0.1"
 gunicorn = "==20.1.0"
+pyyaml = "==5.4.1"
 
 [dev-packages]
 black = "*"
@@ -24,7 +25,6 @@ pylint = "*"
 jupyter = "*"
 matplotlib = "*"
 seaborn = "*"
-
 
 [scripts]
 lint = "pylint training"

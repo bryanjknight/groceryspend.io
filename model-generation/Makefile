@@ -8,6 +8,8 @@ train:
 	PYTHONPATH=$(PYTHONPATH):$(PWD) pipenv run train
 
 run:
+	CAT_MODEL=output/categorize/model/categorize_tuple.pkl \
+	CAT_YAML=data/canonical/categories.yml \
 	pipenv run start
 
 build:

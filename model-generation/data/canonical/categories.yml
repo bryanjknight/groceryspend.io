@@ -1,0 +1,52 @@
+# This is the canonical list of categories
+# Changes to this file must be propogated to 
+# - The categorize database for the server to consumer
+# - The trained model as the ID will be the output of the prediction
+
+categories:
+  - id: 1
+    name: Frozen
+  - id: 2
+    name: Deli
+  - id: 3
+    name: Health & Beauty
+  - id: 4
+    name: Baking & Cooking Needs
+  - id: 5
+    name: Beverages
+  - id: 6
+    name: Rice, Grains, Pasta, & Beans
+  - id: 7 
+    name: Condiments & Sauces
+  - id: 8
+    name: Bread & Bakery
+  - id: 9
+    name: Snacks & Candy
+  - id: 10
+    name: Pet Store
+  - id: 11
+    name: Breakfast & Cereal
+  - id: 12
+    name: Laundry, Paper, and Cleaning
+  - id: 13
+    name: Dairy
+  - id: 14
+    name: Soups & Canned Goods
+  - id: 15
+    name: Alcoholic Beverages
+  - id: 16
+    name: Home Office
+  - id: 17
+    name: Produce
+  - id: 18
+    name: Baby & Childcare
+  - id: 19
+    name: Seafood
+  - id: 20
+    name: Meat
+  - id: 21
+    name: Meal Kits
+  - id: 22
+    name: Floral & Garden
+  - id: 23
+    name: Charitable Contributions
