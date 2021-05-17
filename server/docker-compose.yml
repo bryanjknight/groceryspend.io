@@ -1,7 +1,8 @@
 version: "3.9"
 services:
   postgres:
-    image: postgres
+    # we use 12 because that's the latest version DigitalOcean supports
+    image: postgres:12
     restart: always
     environment: 
       POSTGRES_PASSWORD: example

@@ -22,7 +22,6 @@ resource "digitalocean_droplet" "bastion" {
   provisioner "remote-exec" {
     inline = [
       "export PATH=$PATH:/usr/bin",
-      # install nginx
       "sudo apt-get update",
     ]
   }

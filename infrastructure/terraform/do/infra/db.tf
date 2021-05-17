@@ -51,37 +51,18 @@ resource "null_resource" "setup_db" {
     digitalocean_database_user.receipts,
     digitalocean_database_user.users
   ]
-  # setup receiptsdb and receipts
+
+  # setup receiptsdb and receipts via the bastion
   provisioner "local-exec" {
 
-    command = "psql --set=sslmode=require -U ${digitalocean_database_cluster.postgres.user} -p ${digitalocean_database_cluster.postgres.port} -h ${digitalocean_database_cluster.postgres.host} -w receiptsdb -c 'CREATE EXTENSION \"uuid-ossp\"'"
+    command = "../../server/scripts/init-db.sh"
 
     environment = {
+      POSTGRES_USER = "${digitalocean_database_cluster.postgres.user}"
       PGPASSWORD = "${digitalocean_database_cluster.postgres.password}"
-    }
-  }
-  provisioner "local-exec" {
-    command = "psql --set=sslmode=require -U ${digitalocean_database_cluster.postgres.user} -p ${digitalocean_database_cluster.postgres.port} -h ${digitalocean_database_cluster.postgres.host} -w receiptsdb -c 'GRANT ALL PRIVILEGES ON DATABASE receiptsdb TO receipts'"
-
-    environment = {
-      PGPASSWORD = "${digitalocean_database_cluster.postgres.password}"
-    }
-  }
-
-  # setup usersdb and users
-  provisioner "local-exec" {
-
-    command = "psql --set=sslmode=require -U ${digitalocean_database_cluster.postgres.user} -p ${digitalocean_database_cluster.postgres.port} -h ${digitalocean_database_cluster.postgres.host} -w usersdb -c 'CREATE EXTENSION \"uuid-ossp\"'"
-
-    environment = {
-      PGPASSWORD = "${digitalocean_database_cluster.postgres.password}"
-    }
-  }
-  provisioner "local-exec" {
-    command = "psql --set=sslmode=require -U ${digitalocean_database_cluster.postgres.user} -p ${digitalocean_database_cluster.postgres.port} -h ${digitalocean_database_cluster.postgres.host} -w usersdb -c 'GRANT ALL PRIVILEGES ON DATABASE usersdb TO users'"
-
-    environment = {
-      PGPASSWORD = "${digitalocean_database_cluster.postgres.password}"
+      PGHOST =  "${digitalocean_database_cluster.postgres.host}"
+      PGPORT = "${digitalocean_database_cluster.postgres.port}"
+      POSTGRES_DB = "defaultdb" # digitalocean's default database
     }
   }
 }
