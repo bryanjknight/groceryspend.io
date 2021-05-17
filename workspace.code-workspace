@@ -20,9 +20,6 @@
 		}
 	],
 	"settings": {
-		"jest.disabledWorkspaceFolders": [
-			"data-processing"	
-		],
 		"git.ignoreLimitWarning": true,
 		"jupyter.jupyterServerType": "remote"
 	}
