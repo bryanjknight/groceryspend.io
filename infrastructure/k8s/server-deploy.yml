@@ -14,7 +14,7 @@ data:
   AUTH_ALLOW_BROWSER_EXTENSIONS: "true"
   AUTH_MAX_AGE: "12h"
   CATEGORIZE_HOST: http://prediction.app
-  CATEGORIZE_PATH: "/categorize"
+  CATEGORIZE_PATH: "categorize"
   NO_LOAD_ENV_FILE: "true"
   RECEIPTS_RABBITMQ_WORK_QUEUE: receipt_requests
   RECEIPTS_RABBITMQ_DLQ: receipt_requests_dlq
