@@ -1,0 +1,1 @@
+ALTER TABLE parsed_items ADD COLUMN IF NOT EXISTS category VARCHAR(255);

@@ -34,7 +34,7 @@ import (
 // ############################## //
 
 // DatabaseVersion is the desired database version for this git commit
-const DatabaseVersion = 4
+const DatabaseVersion = 5
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
