@@ -20,7 +20,7 @@ func HandleReceiptRequest(
 	// categorize the items
 	for _, item := range receipt.Items {
 		itemNames := []string{item.Name}
-		itemToCat := make(map[string]string)
+		itemToCat := make(map[string]*categorize.Category)
 
 		err = categorizeClient.GetCategoryForItems(itemNames, &itemToCat)
 		if err != nil {

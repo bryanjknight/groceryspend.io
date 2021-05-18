@@ -35,6 +35,7 @@ func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository) gin.Handl
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+			return
 		}
 
 		layout := "2006-01-02"
@@ -46,6 +47,7 @@ func handleSpendByCategoryInTimeframe(repo receipts.ReceiptRepository) gin.Handl
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+			return
 		}
 
 		// return a JSON blob of results

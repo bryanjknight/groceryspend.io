@@ -22,6 +22,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/streadway/amqp"
 
+	"groceryspend.io/server/services/categorize"
 	"groceryspend.io/server/utils"
 )
 
@@ -33,7 +34,7 @@ import (
 // ############################## //
 
 // DatabaseVersion is the desired database version for this git commit
-const DatabaseVersion = 3
+const DatabaseVersion = 4
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
@@ -46,6 +47,7 @@ type ReceiptRepository interface {
 
 // DefaultReceiptRepository is an implementation of the receipt datastore using postgres and rabbitmq
 type DefaultReceiptRepository struct {
+	CatClient       categorize.Client
 	DbConnection    *sqlx.DB
 	RabbitMqConn    *amqp.Connection // do i need this?
 	RabbitMqChannel *amqp.Channel
@@ -116,6 +118,7 @@ func NewDefaultReceiptRepository() *DefaultReceiptRepository {
 		RabbitMqChannel: ch,
 		RabbitMqQueue:   &q,
 		RabbitMqDLQ:     &dlq,
+		CatClient:       categorize.NewDefaultClient(),
 	}
 	return &retval
 }
@@ -183,7 +186,7 @@ func (r *DefaultReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 func saveParsedItem(tx *sql.Tx, prID uuid.UUID, pi *ReceiptItem) error {
 	sql := `
 	INSERT INTO parsed_items (
-		name, total_cost, parsed_receipt_id, category, unit_cost, qty, weight, container_size, container_unit
+		name, total_cost, parsed_receipt_id, category_id, unit_cost, qty, weight, container_size, container_unit
 	)
 	VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)
 	RETURNING id
@@ -192,7 +195,7 @@ func saveParsedItem(tx *sql.Tx, prID uuid.UUID, pi *ReceiptItem) error {
 		pi.Name,
 		pi.TotalCost,
 		prID,
-		pi.Category,
+		pi.Category.ID,
 		pi.UnitCost,
 		pi.Qty,
 		pi.Weight,
@@ -362,7 +365,7 @@ func (r *DefaultReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID 
 // AggregateSpendByCategoryOverTime get spend by category over time
 func (r *DefaultReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
 	sql := `
-		select sum(total_cost) as value, category
+		select sum(total_cost) as value, category_id
 		from parsed_items pi
 		inner join parsed_receipts pr on
 			pi.parsed_receipt_id = pr.id
@@ -370,27 +373,41 @@ func (r *DefaultReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid.
 			pr.unparsed_receipt_request_id = urr.id
 		where urr.user_id = $1 
 			AND pr.order_timestamp between $2 AND $3
-		group by category
+		group by category_id
 		order by sum(total_cost) desc
 	`
 	retval := []*AggregatedCategory{}
 	rows, err := r.DbConnection.QueryxContext(context.Background(), sql, userID, start, end)
+	if err != nil {
+		return retval, err
+	}
+
 	if rows == nil {
 		return retval, fmt.Errorf("Got null rows back")
 	}
 	defer rows.Close()
 
-	if err != nil {
-		return retval, err
-	}
-
 	for rows.Next() {
-		var catSum AggregatedCategory
-		err = rows.StructScan(&catSum)
+
+		var id int
+		var value float32
+
+		err := rows.Scan(&value, &id)
 		if err != nil {
-			return retval, err
+			println(err.Error())
+			return nil, err
 		}
-		retval = append(retval, &catSum)
+
+		cat, err := r.CatClient.GetCategoryByID(uint(id))
+		if err != nil {
+			println(err.Error())
+			return nil, err
+		}
+
+		retval = append(retval, &AggregatedCategory{
+			Category: cat.Name,
+			Value:    value,
+		})
 	}
 
 	return retval, nil

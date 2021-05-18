@@ -14,9 +14,14 @@ run:
 
 build:
 	docker build -t predict:$(DOCKER_TAG) .
+	docker tag predict:$(DOCKER_TAG) groceryspend/predict:$(DOCKER_TAG)
 
 clean:
 	rm -rf output/
+
+push:
+	docker push groceryspend/predict:$(DOCKER_TAG)
+
 
 local-all: | train run
 

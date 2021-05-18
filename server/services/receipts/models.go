@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"groceryspend.io/server/services/categorize"
 )
 
 // ParseReceiptRequest is an external rqeuest to parse a receipt
@@ -38,9 +39,9 @@ type ReceiptItem struct {
 	TotalCost       float32   `json:"TotalCost"`
 	Name            string    `json:"Name"`
 	ParsedReceiptID uuid.UUID
-	Category        string  `json:"Category"`
-	ContainerSize   float32 `json:"ContainerSize"`
-	ContainerUnit   string  `json:"ContainerUnit"`
+	Category        *categorize.Category `json:"Category"`
+	ContainerSize   float32              `json:"ContainerSize"`
+	ContainerUnit   string               `json:"ContainerUnit"`
 }
 
 // ReceiptDetail a fully parsed receipt
