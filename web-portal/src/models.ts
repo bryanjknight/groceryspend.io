@@ -2,6 +2,16 @@
 /* Do not change, this code is generated from Golang structs */
 
 
+export class Category {
+    ID: number;
+    Name: string;
+
+    constructor(source: any = {}) {
+        if ('string' === typeof source) source = JSON.parse(source);
+        this.ID = source["ID"];
+        this.Name = source["Name"];
+    }
+}
 export class ReceiptItem {
     ID: string;
     UnitCost: number;
@@ -9,7 +19,7 @@ export class ReceiptItem {
     Weight: number;
     TotalCost: number;
     Name: string;
-    Category: string;
+    Category?: Category;
     ContainerSize: number;
     ContainerUnit: string;
 
@@ -21,10 +31,28 @@ export class ReceiptItem {
         this.Weight = source["Weight"];
         this.TotalCost = source["TotalCost"];
         this.Name = source["Name"];
-        this.Category = source["Category"];
+        this.Category = this.convertValues(source["Category"], Category);
         this.ContainerSize = source["ContainerSize"];
         this.ContainerUnit = source["ContainerUnit"];
     }
+
+	convertValues(a: any, classs: any, asMap: boolean = false): any {
+	    if (!a) {
+	        return a;
+	    }
+	    if (a.slice) {
+	        return (a as any[]).map(elem => this.convertValues(elem, classs));
+	    } else if ("object" === typeof a) {
+	        if (asMap) {
+	            for (const key of Object.keys(a)) {
+	                a[key] = new classs(a[key]);
+	            }
+	            return a;
+	        }
+	        return new classs(a);
+	    }
+	    return a;
+	}
 }
 export class ReceiptDetail {
     ID: string;

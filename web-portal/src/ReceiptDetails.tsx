@@ -36,6 +36,7 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
       <thead>
         <tr>
           <th scope="col">Item</th>
+          <th scope="col">Category</th>
           <th scope="col">Cost</th>
         </tr>
       </thead>
@@ -43,6 +44,7 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
         {data.Items?.map((item: ReceiptItem, i: number) => (
           <tr key={item.ID}>
             <td>{item.Name}</td>
+            <td>{item.Category?.Name}</td>
             <td>${item.TotalCost}</td>
           </tr>
         ))}

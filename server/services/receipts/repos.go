@@ -338,7 +338,7 @@ func (r *DefaultReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID 
 			pi.weight as Weight,
 			pi.total_cost as TotalCost,
 			pi.name as Name,
-			pi.category as Category,
+			pi.category_id as CategoryID,
 			pi.container_size as ContainerSize,
 			pi.container_unit as ContainerUnit
 		FROM parsed_items pi
@@ -354,6 +354,14 @@ func (r *DefaultReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID 
 	for rows.Next() {
 		tmp := ReceiptItem{}
 		rows.StructScan(&tmp)
+
+		// fetch category
+		cat, err := r.CatClient.GetCategoryByID(uint(tmp.CategoryID))
+		if err != nil {
+			return nil, err
+		}
+
+		tmp.Category = cat
 		items = append(items, &tmp)
 	}
 

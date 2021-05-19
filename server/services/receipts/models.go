@@ -39,6 +39,7 @@ type ReceiptItem struct {
 	TotalCost       float32   `json:"TotalCost"`
 	Name            string    `json:"Name"`
 	ParsedReceiptID uuid.UUID
+	CategoryID      int
 	Category        *categorize.Category `json:"Category"`
 	ContainerSize   float32              `json:"ContainerSize"`
 	ContainerUnit   string               `json:"ContainerUnit"`
