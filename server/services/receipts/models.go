@@ -45,6 +45,11 @@ type ReceiptItem struct {
 	ContainerUnit   string               `json:"ContainerUnit"`
 }
 
+// PatchReceiptItem is a JSON request to patch a receipt item.
+type PatchReceiptItem struct {
+	CategoryID uint `json:"CategoryID"`
+}
+
 // ReceiptDetail a fully parsed receipt
 type ReceiptDetail struct {
 	ID               uuid.UUID      `json:"ID"`

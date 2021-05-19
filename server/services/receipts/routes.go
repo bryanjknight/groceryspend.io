@@ -17,6 +17,59 @@ func ReceiptRoutes(route *gin.Engine, repo ReceiptRepository, catClient categori
 	router.GET("/", handleListReceipts(repo))
 	router.GET("/:id", handleReceiptDetail(repo))
 	router.POST("/receipt", handleSubmitReceipt(repo, catClient))
+	router.PATCH(("/:receipt_id/items/:item_id"), handleItemUpdate(repo))
+}
+
+func handleItemUpdate(repo ReceiptRepository) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+
+		receiptID := c.Param("receipt_id")
+		receiptUUID, err := uuid.Parse(receiptID)
+		if err != nil {
+			println(err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid Receipt ID",
+			})
+			return
+		}
+
+		itemID := c.Param("item_id")
+		itemUUID, err := uuid.Parse(itemID)
+		if err != nil {
+			println(err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid Item ID",
+			})
+			return
+		}
+
+		var req PatchReceiptItem
+		if err := c.ShouldBind(&req); err != nil {
+			println("failed to parse request")
+			println(err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
+
+		err = repo.PatchReceiptItem(userID, receiptUUID, itemUUID, req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		// TODO: clear any caching we might have for this receipt
+
+		c.AbortWithStatus(http.StatusOK)
+
+	}
+
+	return gin.HandlerFunc(fn)
 }
 
 func handleListReceipts(repo ReceiptRepository) gin.HandlerFunc {

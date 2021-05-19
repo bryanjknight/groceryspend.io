@@ -42,6 +42,7 @@ type ReceiptRepository interface {
 	SaveReceiptRequest(request *ParseReceiptRequest) error
 	GetReceipts(user uuid.UUID) ([]*ReceiptSummary, error)
 	GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ReceiptDetail, error)
+	PatchReceiptItem(userID uuid.UUID, receiptID uuid.UUID, itemID uuid.UUID, req PatchReceiptItem) error
 	AggregateSpendByCategoryOverTime(user uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error)
 }
 
@@ -368,6 +369,38 @@ func (r *DefaultReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID 
 	// add items to the parsed receipt
 	retval.Items = items
 	return &retval, nil
+}
+
+// PatchReceiptItem updates specific values on an item. Currently only supports category
+func (r *DefaultReceiptRepository) PatchReceiptItem(userID uuid.UUID, receiptID uuid.UUID, itemID uuid.UUID, req PatchReceiptItem) error {
+	sql := `
+		UPDATE parsed_items as pi SET user_category_id = 
+			CASE 
+				WHEN category_id = $1 THEN null
+				ELSE $1
+			END
+		FROM parsed_receipts pr, unparsed_receipt_requests urr
+		WHERE
+			pi.parsed_receipt_id = pr.id AND
+			pr.unparsed_receipt_request_id = urr.id AND
+		  urr.user_id = $2 AND 
+			pr.ID = $3 AND
+			pi.ID = $4
+		RETURNING pi.ID`
+
+	row := r.DbConnection.QueryRowContext(context.Background(), sql,
+		req.CategoryID,
+		userID,
+		receiptID,
+		itemID,
+	)
+	var piID uuid.UUID
+	err := row.Scan(&piID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AggregateSpendByCategoryOverTime get spend by category over time
