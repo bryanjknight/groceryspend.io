@@ -34,7 +34,7 @@ import (
 // ############################## //
 
 // DatabaseVersion is the desired database version for this git commit
-const DatabaseVersion = 5
+const DatabaseVersion = 6
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
@@ -338,7 +338,7 @@ func (r *DefaultReceiptRepository) GetReceiptDetail(userID uuid.UUID, receiptID 
 			pi.weight as Weight,
 			pi.total_cost as TotalCost,
 			pi.name as Name,
-			pi.category_id as CategoryID,
+			COALESCE(pi.user_category_id, pi.category_id) as CategoryID,
 			pi.container_size as ContainerSize,
 			pi.container_unit as ContainerUnit
 		FROM parsed_items pi

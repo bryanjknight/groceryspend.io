@@ -1,0 +1,1 @@
+ALTER TABLE parsed_items REMOVE COLUMN user_category_id;

@@ -45,7 +45,7 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
           <tr key={item.ID}>
             <td>{item.Name}</td>
             <td>{item.Category?.Name}</td>
-            <td>${item.TotalCost}</td>
+            <td>${item.TotalCost.toFixed(2)}</td>
           </tr>
         ))}
       </tbody>
