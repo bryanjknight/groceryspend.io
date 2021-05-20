@@ -33,21 +33,25 @@ jobs:
         with:
           node-version: '14'
 
+      - name: Install yarn
+        working-directory: web-portal
+        run: npm install -g yarn
+
       - name: Install dependences
         working-directory: web-portal
-        run: npm install
+        run: yarn
 
       - name: Build web-portal
         working-directory: web-portal
-        run: npm run build
+        run: yarn build
 
       - name: Run unit tests
         working-directory: web-portal
-        run: npm run test
+        run: yarn test
   
       - name: Run code coverage
         working-directory: web-portal
-        run: npm run test:coverage
+        run: yarn test:coverage
 
       - name: Dockerize
         working-directory: web-portal
