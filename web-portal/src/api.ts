@@ -1,4 +1,4 @@
-import { ReceiptDetail, ReceiptSummary, AggregatedCategory } from "./models";
+import { ReceiptDetail, ReceiptSummary, AggregatedCategory, Category } from "./models";
 import axios from "axios";
 
 const BASE_URL = process.env.API_URL;
@@ -71,3 +71,18 @@ export const getSpendByCategoryOverTime = (
     })
     .then((resp) => resp.data)
     .then((data: unknown[]) => data.map((item) => new AggregatedCategory(item)));
+
+export const getAllCategories = () => (bearerToken: string): Promise<Category[]> => 
+    axios
+      .request({
+        method: "GET",
+        baseURL: BASE_URL,
+        // the slash is important :(
+        url: `/categories/`,
+        headers: {
+          ...DEFAULT_AXIOS_HEADERS,
+          Authorization: `Bearer ${bearerToken}`
+        }
+      })
+      .then((resp) => resp.data)
+      .then((data: unknown[]) => data.map((item) => new Category(item)))
