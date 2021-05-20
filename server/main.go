@@ -38,7 +38,7 @@ func main() {
 		MaxAge:                 utils.GetOsValueAsDuration("AUTH_MAX_AGE"),
 	}))
 
-	// create repos
+	// create repos and clients
 	receiptsRepo := receipts.NewDefaultReceiptRepository()
 	categorizeClient := categorize.NewDefaultClient()
 
@@ -47,6 +47,7 @@ func main() {
 		go receipts.ProcessReceiptRequests("server-process-worker")
 	}
 
+	categorize.CategoryRoutes(r, categorizeClient)
 	receipts.ReceiptRoutes(r, receiptsRepo, categorizeClient)
 	analytics.Routes(r, receiptsRepo)
 	r.Run("0.0.0.0:8080")
