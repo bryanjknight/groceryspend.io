@@ -18,7 +18,7 @@ export const useApi = <T>(
     (async () => {
       try {
         const { audience, scope } = options;
-        const accessToken = await getAccessTokenSilently({ audience, scope });
+        const accessToken = await getAccessTokenSilently({ audience, scope, timeoutInSeconds: 60*60 });
         const data = await apiCall(accessToken);
         setState({
           ...state,
