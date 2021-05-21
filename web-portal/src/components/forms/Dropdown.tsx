@@ -5,7 +5,6 @@ export interface DropdownProps<T> {
   onSelect: (t: T) => void;
   mapOptionsToSelectItems: (t: T) => OptionType;
   options: T[];
-  selectedValue?: T;
   defaultValue?: T;
 }
 
@@ -27,31 +26,32 @@ export const Dropdown: DropdownJSXElement = (props): JSX.Element => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }, {} as Record<string, any>); // TODO: is there a better way to handle the generics
 
-  const selectedValueID = props.selectedValue
-    ? props.mapOptionsToSelectItems(props.selectedValue)
-    : null;
-  const defaultValueID = props.defaultValue
-    ? props.mapOptionsToSelectItems(props.defaultValue)
-    : null;
 
-  const isSelected = (item: OptionType) => {
-    if ((selectedValueID && selectedValueID.value === item.value) ||
-    (defaultValueID && defaultValueID.value === item.value)) {
-      return true;
-    }
-    return false;
-  }
-
+  
   const options = props.options
     .map(props.mapOptionsToSelectItems)
     .map((item) => (
-      <option value={item.value} selected={isSelected(item)}>
+      <option value={item.value}>
         {item.label}
       </option>
     ));
+  
+  if (!props.defaultValue) {
+    options.splice(0, 0, <option value="">--Select One---</option>)
+  }
+  
+  let extraArgs = {};
+  if (props.defaultValue) {
+    extraArgs = {
+      ...extraArgs,
+      defaultValue: props.defaultValue,
+    }
+  }
 
   const handleOnSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectValue = event.target.value
+
+    if (selectValue === "") return;
 
     const item = valueToOption[selectValue];
 
@@ -60,7 +60,7 @@ export const Dropdown: DropdownJSXElement = (props): JSX.Element => {
 
   return (
     <div>
-      <select id={props.id} onSelect={handleOnSelect}>{options}</select>
+      <select id={props.id} onSelect={handleOnSelect} {...extraArgs}>{options}</select>
     </div>
   );
 };
