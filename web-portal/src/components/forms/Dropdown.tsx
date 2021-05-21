@@ -29,10 +29,10 @@ export const Dropdown: DropdownJSXElement = (props): JSX.Element => {
 
   const options = props.options
     .map(props.mapOptionsToSelectItems)
-    .map((item) => <option value={item.value}>{item.label}</option>);
+    .map((item) => <option key={item.value} value={item.value}>{item.label}</option>);
 
   if (!props.defaultValue) {
-    options.splice(0, 0, <option value="">--Select One---</option>);
+    options.splice(0, 0, <option key={"?"} value="">--Select One---</option>);
   }
 
   let extraArgs = {};
@@ -56,7 +56,7 @@ export const Dropdown: DropdownJSXElement = (props): JSX.Element => {
   return (
     <div>
       <select
-        // id={props.id}
+        id={props.id}
         onChange={handleOnChange}
         onBlur={props.onBlur}
         {...extraArgs}
