@@ -107,6 +107,7 @@ func handleReceiptDetail(repo ReceiptRepository) gin.HandlerFunc {
 		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
 		receipt, err := repo.GetReceiptDetail(userID, receiptUUID)
 		if err != nil {
+			println(err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to retrieve receipt",
 			})

@@ -96,8 +96,12 @@ export const patchItemCategory = (
   receiptID: string,
   item: ReceiptItem,
   newCategory: Category
-) => (bearerToken: string): Promise<void> =>
-  axios
+) => (bearerToken: string): Promise<void> => {
+  // don't patch if it hasn't changed
+  if (item.Category?.ID === newCategory.ID) {
+    return Promise.resolve();
+  }
+  return axios
     .request({
       method: "PATCH",
       baseURL: BASE_URL,
@@ -115,3 +119,4 @@ export const patchItemCategory = (
         ? Promise.resolve()
         : Promise.reject(new Error(resp.statusText))
     );
+};

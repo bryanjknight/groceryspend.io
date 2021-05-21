@@ -7,11 +7,9 @@ import { ReceiptSummary } from "./models";
 import { getReceipts } from "./api";
 
 export function Receipts(): JSX.Element {
-  const { loading, error, data } = useApi<ReceiptSummary[]>(getReceipts({}), {
+  const { loading, error, data } = useApi<ReceiptSummary[]>(getReceipts(), {
     audience: "https://bknight.dev.groceryspend.io",
     scope: "read:users",
-    mode: "cors",
-    credentials: "include",
   });
 
   if (loading) {
