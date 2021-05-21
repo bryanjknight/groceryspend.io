@@ -1,4 +1,4 @@
-const custom = require("../webpack.dev.js");
+// const custom = require("../webpack.common.js");
 
 module.exports = {
   stories: ["../src/**/*.stories.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
