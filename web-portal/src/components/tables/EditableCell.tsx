@@ -6,9 +6,9 @@ export interface EditableCellProps<T> {
   valueLabelMaker: (t: T) => string;
   editorFactory: (
     handleChange: (t: T) => void,
-    handleOnBlur: () => void
+    handleOnBlur: () => void,
+    defaultValue: T,
   ) => JSX.Element;
-  onBlur: () => void;
   onValueChange: (t: T) => void;
   className: string;
 }
@@ -32,7 +32,7 @@ export const EditableCell = <T extends object>(
       setEditing(false);
     };
 
-    const editor = props.editorFactory(handleChange, handleOnBlur);
+    const editor = props.editorFactory(handleChange, handleOnBlur, value || props.value);
 
     return <td className={props.className}>{editor}</td>;
   } else {

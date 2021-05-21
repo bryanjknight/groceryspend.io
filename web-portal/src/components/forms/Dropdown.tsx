@@ -1,6 +1,6 @@
 import React from "react";
 
-export interface DropdownProps<T> {
+export interface DropdownProps<T extends {ID: number}> {
   id: string;
   onSelect: (t: T) => void;
   onBlur: () => void;
@@ -14,7 +14,7 @@ export interface OptionType {
   label: string;
 }
 
-export type DropdownJSXElement = <T>(props: DropdownProps<T>) => JSX.Element;
+export type DropdownJSXElement = <T extends {ID: number}>(props: DropdownProps<T>) => JSX.Element;
 
 export const Dropdown: DropdownJSXElement = (props): JSX.Element => {
   const valueToOption = props.options.reduce((acc, option) => {
@@ -39,7 +39,7 @@ export const Dropdown: DropdownJSXElement = (props): JSX.Element => {
   if (props.defaultValue) {
     extraArgs = {
       ...extraArgs,
-      defaultValue: props.defaultValue,
+      defaultValue: props.defaultValue.ID,
     };
   }
 

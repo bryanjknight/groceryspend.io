@@ -34,7 +34,7 @@ export const Primary = Template.bind({});
 
 Primary.args = {
   id: "test",
-  editorFactory: (handleChange, handleOnBlur) => {
+  editorFactory: (handleChange, handleOnBlur, defaultValue) => {
     const dropdownProps: DropdownProps<Category> = {
       id: "test-dropdown",
       mapOptionsToSelectItems: (c: Category) => ({
@@ -48,12 +48,13 @@ Primary.args = {
         { ID: 2, Name: "B" },
         { ID: 3, Name: "C" },
       ],
+      defaultValue: defaultValue,
     };
     return <Dropdown {...dropdownProps} />
   },
   valueLabelMaker: (c: Category) => c.Name,
   value: {
-    ID: 1,
-    Name: "A",
+    ID: 2,
+    Name: "B",
   },
 };
