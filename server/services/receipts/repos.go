@@ -406,7 +406,7 @@ func (r *DefaultReceiptRepository) PatchReceiptItem(userID uuid.UUID, receiptID 
 // AggregateSpendByCategoryOverTime get spend by category over time
 func (r *DefaultReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid.UUID, start time.Time, end time.Time) ([]*AggregatedCategory, error) {
 	sql := `
-		select sum(total_cost) as value, category_id
+		select sum(total_cost) as value, COALESCE(user_category_id, category_id) as category_id
 		from parsed_items pi
 		inner join parsed_receipts pr on
 			pi.parsed_receipt_id = pr.id
@@ -414,7 +414,7 @@ func (r *DefaultReceiptRepository) AggregateSpendByCategoryOverTime(userID uuid.
 			pr.unparsed_receipt_request_id = urr.id
 		where urr.user_id = $1 
 			AND pr.order_timestamp between $2 AND $3
-		group by category_id
+		group by COALESCE(user_category_id, category_id)
 		order by sum(total_cost) desc
 	`
 	retval := []*AggregatedCategory{}
