@@ -1,5 +1,5 @@
 import React from "react";
-import '../BaseChart.less'
+import "../BaseChart.less";
 import { Doughnut } from "react-chartjs-2";
 import { AggregationDataRecord, filterDataRecords } from "..";
 
@@ -50,15 +50,29 @@ export const DonutChart = (props: DonutChartProps): JSX.Element => {
     ],
   };
 
+  const options = {
+    maintainAspectRatio: false,
+    plugins: {
+      tooltip: {
+        callbacks: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          label: (context: any) => {
+            return `${context.label}: $${context.parsed.toFixed(2)}`
+          },
+        },
+      },
+    },
+  };
+
   return (
     <div>
-      <Doughnut height={props.height} width={props.width} data={data} type={"doughnut"} options={
-        {
-          // if we want a responsive experience, we'll need to think about how to toggle this
-          // off and on
-          responsive: false
-        }
-      } />
+      <Doughnut
+        height={props.height}
+        width={props.width}
+        data={data}
+        type={"doughnut"}
+        options={options}
+      />
     </div>
   );
 };
