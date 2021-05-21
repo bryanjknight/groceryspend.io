@@ -1,26 +1,27 @@
-import { ReceiptDetail, ReceiptSummary, AggregatedCategory, Category } from "./models";
+import {
+  ReceiptDetail,
+  ReceiptSummary,
+  AggregatedCategory,
+  Category,
+  ReceiptItem,
+  PatchReceiptItem,
+} from "./models";
 import axios from "axios";
 
 const BASE_URL = process.env.API_URL;
 
 const DEFAULT_AXIOS_HEADERS = {
   Accept: "application/json",
-}
-
-export interface PactTestable {
-  baseUrl?: string;
-}
-
-export type GetReceiptsParams = PactTestable;
+};
 
 // fetch receipts for this user
-export const getReceipts = (params: GetReceiptsParams) => (
+export const getReceipts = () => (
   bearerToken: string
 ): Promise<ReceiptSummary[]> =>
   axios
     .request({
       method: "GET",
-      baseURL: params.baseUrl || BASE_URL,
+      baseURL: BASE_URL,
       url: "/receipts/",
       headers: {
         ...DEFAULT_AXIOS_HEADERS,
@@ -30,7 +31,7 @@ export const getReceipts = (params: GetReceiptsParams) => (
     .then((resp) => resp.data)
     .then((data: unknown[]) => data.map((item) => new ReceiptSummary(item)));
 
-export interface GetReceiptDetailsParams extends PactTestable {
+export interface GetReceiptDetailsParams {
   receiptUuid: string;
 }
 
@@ -41,7 +42,7 @@ export const getReceiptDetails = (params: GetReceiptDetailsParams) => (
   axios
     .request({
       method: "GET",
-      baseURL: params.baseUrl || BASE_URL,
+      baseURL: BASE_URL,
       url: `/receipts/${params.receiptUuid}`,
       headers: {
         ...DEFAULT_AXIOS_HEADERS,
@@ -52,7 +53,7 @@ export const getReceiptDetails = (params: GetReceiptDetailsParams) => (
     .then((data) => new ReceiptDetail(data));
 
 // fetch analytics
-export interface GetSpendByCategoryOverTimeParams extends PactTestable {
+export interface GetSpendByCategoryOverTimeParams {
   start: string;
   end: string;
 }
@@ -62,7 +63,7 @@ export const getSpendByCategoryOverTime = (
   axios
     .request({
       method: "GET",
-      baseURL: params.baseUrl || BASE_URL,
+      baseURL: BASE_URL,
       url: `/analytics/spend-by-category?startDate=${params.start}&endDate=${params.end}`,
       headers: {
         ...DEFAULT_AXIOS_HEADERS,
@@ -70,19 +71,47 @@ export const getSpendByCategoryOverTime = (
       },
     })
     .then((resp) => resp.data)
-    .then((data: unknown[]) => data.map((item) => new AggregatedCategory(item)));
+    .then((data: unknown[]) =>
+      data.map((item) => new AggregatedCategory(item))
+    );
 
-export const getAllCategories = () => (bearerToken: string): Promise<Category[]> => 
-    axios
-      .request({
-        method: "GET",
-        baseURL: BASE_URL,
-        // the slash is important :(
-        url: `/categories/`,
-        headers: {
-          ...DEFAULT_AXIOS_HEADERS,
-          Authorization: `Bearer ${bearerToken}`
-        }
-      })
-      .then((resp) => resp.data)
-      .then((data: unknown[]) => data.map((item) => new Category(item)))
+export const getAllCategories = () => (
+  bearerToken: string
+): Promise<Category[]> =>
+  axios
+    .request({
+      method: "GET",
+      baseURL: BASE_URL,
+      // TODO: why does this break without the trailing slash? this doesn't happen in postman
+      url: `/categories/`,
+      headers: {
+        ...DEFAULT_AXIOS_HEADERS,
+        Authorization: `Bearer ${bearerToken}`,
+      },
+    })
+    .then((resp) => resp.data)
+    .then((data: unknown[]) => data.map((item) => new Category(item)));
+
+export const patchItemCategory = (
+  receiptID: string,
+  item: ReceiptItem,
+  newCategory: Category
+) => (bearerToken: string): Promise<void> =>
+  axios
+    .request({
+      method: "PATCH",
+      baseURL: BASE_URL,
+      url: `/receipts/${receiptID}/items/${item.ID}`,
+      headers: {
+        ...DEFAULT_AXIOS_HEADERS,
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      data: {
+        CategoryID: newCategory.ID,
+      } as PatchReceiptItem,
+    })
+    .then((resp) =>
+      resp.status
+        ? Promise.resolve()
+        : Promise.reject(new Error(resp.statusText))
+    );
