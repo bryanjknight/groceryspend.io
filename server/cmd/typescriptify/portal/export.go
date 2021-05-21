@@ -21,6 +21,7 @@ func main() {
 		Add(receipts.ReceiptSummary{}).
 		Add(receipts.ParseReceiptRequest{}).
 		Add(receipts.AggregatedCategory{}).
+		Add(receipts.PatchReceiptItem{}).
 		ManageType(time.Time{}, typescriptify.TypeOptions{TSType: "Date", TSTransform: "new Date(__VALUE__)"}).
 		ManageType(uuid.UUID{}, typescriptify.TypeOptions{TSType: "string"})
 

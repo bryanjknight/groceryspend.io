@@ -146,3 +146,11 @@ export class AggregatedCategory {
         this.Value = source["Value"];
     }
 }
+export class PatchReceiptItem {
+    CategoryID: number;
+
+    constructor(source: any = {}) {
+        if ('string' === typeof source) source = JSON.parse(source);
+        this.CategoryID = source["CategoryID"];
+    }
+}
