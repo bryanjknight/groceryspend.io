@@ -4,10 +4,7 @@ module.exports = {
     "@babel/preset-typescript",
     "@babel/preset-react",
   ],
-  plugins: ["react-hot-loader/babel"],
-  // env: {
-  //   "test": {
-  //     "plugins": ["transform-es2015-modules-commonjs"]
-  //   }
-  // }
+  plugins: [
+    "react-hot-loader/babel",
+  ],
 };
