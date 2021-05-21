@@ -16,7 +16,7 @@ export const ReceiptItemRow = (props: {
   receiptID: string;
   item: ReceiptItem;
   catData: Category[];
-}) => {
+}): JSX.Element => {
   const [category, setCategory] = useState(props.item.Category);
   const [stale, setStale] = useState(false);
   const { getAccessTokenSilently } = useAuth0();
@@ -34,17 +34,31 @@ export const ReceiptItemRow = (props: {
       if (stale) {
         try {
           // get the bearer token
-          const accessToken = await getAccessTokenSilently({ audience, scope, timeoutInSeconds: 60*60 });
-          await patchItemCategory(receiptID, item, category || dummyCategory)(accessToken);
+          const accessToken = await getAccessTokenSilently({
+            audience,
+            scope,
+            timeoutInSeconds: 60 * 60,
+          });
+          await patchItemCategory(
+            receiptID,
+            item,
+            category || dummyCategory
+          )(accessToken);
           setStale(false);
-        }
-        catch (error) {
+        } catch (error) {
           console.error(error);
         }
       }
     })();
-    
-  }, [audience, category, dummyCategory, getAccessTokenSilently, item, receiptID, stale])
+  }, [
+    audience,
+    category,
+    dummyCategory,
+    getAccessTokenSilently,
+    item,
+    receiptID,
+    stale,
+  ]);
 
   const handleCategoryEdit = (item: ReceiptItem, currentCategory: Category) => {
     setCategory(currentCategory);
@@ -112,8 +126,6 @@ export function ReceiptDetails(props: RouteComponentProps): JSX.Element {
   >(getAllCategories(), {
     audience: process.env.REACT_APP_AUDIENCE || "",
     scope: "read:users",
-    // mode: "cors",
-    // credentials: "include",
   });
 
   if (loading || catLoading) {
