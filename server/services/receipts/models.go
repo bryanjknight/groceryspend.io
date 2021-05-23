@@ -7,6 +7,46 @@ import (
 	"groceryspend.io/server/services/categorize"
 )
 
+// ParseType is an enum of the various parsing types
+type ParseType int
+
+// Valid ParseType
+const (
+	HTML  ParseType = iota + 1 // EnumIndex = 1
+	Image                      // EnumIndex = 2
+)
+
+// String - Creating common behavior - give the type a String function
+func (d ParseType) String() string {
+	return [...]string{"HTML", "Image"}[d-1]
+}
+
+// EnumIndex - Creating common behavior - give the type a EnumIndex function
+func (d ParseType) EnumIndex() int {
+	return int(d)
+}
+
+// ParseStatus is an enum of the various parsing status
+type ParseStatus int
+
+// Valid ParseStatus
+const (
+	Submitted           ParseStatus = iota + 1 // EnumIndex = 1
+	CompleteWithSuccess                        // EnumIndex = 2
+	CompleteWithErrors                         // EnumIndex = 3
+	Failed                                     // EnumIndex = 4
+)
+
+// String - Creating common behavior - give the type a String function
+func (d ParseStatus) String() string {
+	return [...]string{"Submitted", "CompleteWithSuccess", "CompleteWithErrors", "Failed"}[d-1]
+}
+
+// EnumIndex - Creating common behavior - give the type a EnumIndex function
+func (d ParseStatus) EnumIndex() int {
+	return int(d)
+}
+
 // ParseReceiptRequest is an external rqeuest to parse a receipt
 type ParseReceiptRequest struct {
 	ID             uuid.UUID `json:"id,omitempty"`
@@ -15,8 +55,8 @@ type ParseReceiptRequest struct {
 	Data           string    `json:"data"`
 	UserID         uuid.UUID `json:"userId,omitempty"`
 	ReceiptSummary *ReceiptSummary
-	// TODO: have a status flag
-	// TODO: have a type (e.g. html, image, etc)
+	ParseStatus    ParseStatus `json:"parseStatus,omitempty"`
+	ParseType      ParseType   `json:"parseType,omitempty"` // TODO: make this required on submission
 }
 
 // ReceiptSummary is a summary of a receipt that has been processed
@@ -27,6 +67,8 @@ type ReceiptSummary struct {
 	RequestTimestamp    time.Time `json:"RequestTimestamp"`
 	OrderTimestamp      time.Time `json:"OrderTimestamp"`
 	TotalCost           float32   `json:"TotalCost"`
+	RetailStoreName     string    `json:"RetailStoreName"`
+	ShoppingServiceName string    `json:"ShoppingServiceName"`
 	ParseReceiptRequest *ParseReceiptRequest
 }
 
@@ -64,14 +106,29 @@ type ReceiptDetail struct {
 	Tip                      float32 `json:"Tip"`
 	ServiceFee               float32 `json:"ServiceFee"`
 	DeliveryFee              float32 `json:"DeliveryFee"`
+	OtherFees                float32 `json:"OtherFees"`
 	Discounts                float32 `json:"Discounts"`
 	SubtotalCost             float32 `json:"SubtotalCost"`
 	UnparsedReceiptRequestID uuid.UUID
 	ParseReceiptRequest      *ParseReceiptRequest
+	RetailStore              *RetailStore     `json:"RetailStore"`
+	ShoppingService          *ShoppingService `json:"ShoppingService"`
 }
 
 // AggregatedCategory An aggregation of spend by category
 type AggregatedCategory struct {
 	Category string  `json:"Category"`
 	Value    float32 `json:"Value"`
+}
+
+// RetailStore the store the items were purchased from
+type RetailStore struct {
+	Name        string `json:"Name"`
+	Address     string `json:"Address"`
+	PhoneNumber string `json:"PhoneNumber"`
+}
+
+// ShoppingService the shopping service that acquired the items on the shopper's behalf
+type ShoppingService struct {
+	Name string `json:"Name"`
 }
