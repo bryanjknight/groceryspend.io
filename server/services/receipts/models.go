@@ -109,6 +109,7 @@ type ReceiptDetail struct {
 	OtherFees                float32 `json:"OtherFees"`
 	Discounts                float32 `json:"Discounts"`
 	SubtotalCost             float32 `json:"SubtotalCost"`
+	TotalCost                float32
 	UnparsedReceiptRequestID uuid.UUID
 	ParseReceiptRequest      *ParseReceiptRequest
 	RetailStore              *RetailStore     `json:"RetailStore"`

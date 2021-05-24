@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"runtime"
@@ -11,7 +12,11 @@ import (
 
 func getTestDataDir() string {
 	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filename)))), "test", "data", "marketbasket")
+	return filepath.Join(
+		filepath.Dir(
+			filepath.Dir(
+				filepath.Dir(
+					filepath.Dir(filename)))), "test", "data")
 }
 
 func readFileAsString(filename string) string {
@@ -32,7 +37,7 @@ func TestRegexParser(t *testing.T) {
 
 	tests := []test{
 		{
-			filename: "receipt1.txt",
+			filename: "marketbasket/receipt1.txt",
 			expectedReceipt: &receipts.ReceiptDetail{
 				SalesTax:     0.0,
 				ServiceFee:   0.0,
@@ -40,90 +45,64 @@ func TestRegexParser(t *testing.T) {
 				Tip:          0.0,
 				Discounts:    0.0,
 				SubtotalCost: 34.05,
-				Items: []*receipts.ReceiptItem{
-					{
-						Name:      "GR/HOUSE RED PEPPERS",
-						UnitCost:  2.99,
-						Weight:    0.55,
-						TotalCost: 1.64,
-					},
-					{
-						Name:      "GR/HOUSE RED PEPPERS",
-						UnitCost:  2.99,
-						Weight:    0.77,
-						TotalCost: 1.64,
-					},
-					{
-						Name:      "GR/HOUSE RED PEPPERS",
-						UnitCost:  2.99,
-						Weight:    0.55,
-						TotalCost: 2.30,
-					},
-					{
-						Name:      "RED SEEDLESS GRAPES",
-						UnitCost:  1.79,
-						Weight:    2.38,
-						TotalCost: 1.64,
-					},
-					{
-						Name:      "1# PEELED BABY CARRT",
-						UnitCost:  1.29,
-						Qty:       1,
-						TotalCost: 1.29,
-					},
-					{
-						Name:      "CABOT SERIOUS BRICK",
-						UnitCost:  8.99,
-						Qty:       1,
-						TotalCost: 8.99,
-					},
-					{
-						Name:      "DRAG WHL MOZZ CHUNK",
-						UnitCost:  2.50,
-						Qty:       1,
-						TotalCost: 2.50,
-					},
-					{
-						Name:      "JOE RST RED PEPPERS",
-						UnitCost:  3.59,
-						Qty:       1,
-						TotalCost: 3.59,
-					},
-					{
-						Name:      "FAGE WHOLE 1/2 KILO",
-						UnitCost:  2.99,
-						Qty:       1,
-						TotalCost: 2.99,
-					},
-					{
-						Name:      "GRN MTN SALSA MLD",
-						UnitCost:  3.50,
-						Qty:       1,
-						TotalCost: 3.50,
-					},
-					{
-						Name:      "MB RESTAURANT TORTS",
-						UnitCost:  2.00,
-						Qty:       1,
-						TotalCost: 2.00,
-					},
-				},
+				TotalCost:    34.05,
+				Items:        []*receipts.ReceiptItem{},
+			},
+		},
+		{
+			filename: "hannaford/receipt1.txt",
+			expectedReceipt: &receipts.ReceiptDetail{
+				SalesTax:    0.0,
+				ServiceFee:  0.0,
+				DeliveryFee: 0.0,
+				Tip:         0.0,
+				Discounts:   0.0,
+				// Hannafords in NH doesn't print a subtotal b/c no tax (Live Free or Die)
+				SubtotalCost: 0.0,
+				TotalCost:    29.92,
+				Items:        []*receipts.ReceiptItem{},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		absPath := filepath.Join(getTestDataDir(), test.filename)
-		println(absPath)
 		text := readFileAsString(absPath)
-		actualReceipt, err := RegexParser(text)
+		receiptDetail, err := RegexParser(text)
 
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
 
-		if test.expectedReceipt != actualReceipt {
-			t.Fatalf("Expected did not match actual receipt")
+		actualTotal := float32(0.0)
+		for _, item := range receiptDetail.Items {
+			actualTotal += item.TotalCost
+		}
+		actualTotal += receiptDetail.SalesTax
+
+		// because we store the values as decimals, and float32 and additions is hard
+		// we will use string comparison to verify the totals. Ideally I would store everything
+		// as cents
+		if fmt.Sprintf("%.2f", actualTotal) != fmt.Sprintf("%.2f", test.expectedReceipt.TotalCost) {
+			t.Errorf(
+				fmt.Sprintf(
+					"Expected receipt %s to have total cost of %v, but calculated to be %v",
+					test.filename,
+					receiptDetail.TotalCost,
+					actualTotal,
+				),
+			)
+		}
+
+		if receiptDetail.TotalCost != test.expectedReceipt.TotalCost {
+			t.Errorf(
+				fmt.Sprintf(
+					"Expected total for %s to be %v, got %v",
+					test.filename,
+					test.expectedReceipt.TotalCost,
+					receiptDetail.TotalCost,
+				),
+			)
 		}
 	}
 }
