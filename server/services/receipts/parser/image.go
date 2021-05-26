@@ -276,7 +276,7 @@ func findItemFinalPrices(resp *textract.AnalyzeDocumentOutput, maxTopPos float64
 	for _, block := range resp.Blocks {
 		if *block.BlockType == textract.BlockTypeLine &&
 			priceRegex.MatchString(*block.Text) &&
-			*block.Geometry.BoundingBox.Top < maxTopPos {
+			*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height < maxTopPos {
 			pass1 = append(pass1, block)
 			leftPos = append(leftPos, *block.Geometry.BoundingBox.Left)
 		}
@@ -287,12 +287,12 @@ func findItemFinalPrices(resp *textract.AnalyzeDocumentOutput, maxTopPos float64
 	if err != nil {
 		return nil, err
 	}
-	stdDev, err := stats.StandardDeviation(leftPos)
-	if err != nil {
-		return nil, err
-	}
+	// stdDev, err := stats.StandardDeviation(leftPos)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	println(fmt.Sprintf("mean %.5f, std dev: %.5f", mean, stdDev))
+	// println(fmt.Sprintf("mean %.5f, std dev: %.5f", mean, stdDev))
 
 	retval := []*textract.Block{}
 

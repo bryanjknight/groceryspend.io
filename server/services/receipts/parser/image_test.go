@@ -21,7 +21,7 @@ func TestTextractResponse(t *testing.T) {
 
 	config := ImageReceiptParseConfig{
 		maxItemDescYPos: 0.7,
-		tolerance:       0.01,
+		tolerance:       0.02,
 	}
 
 	err = ProcessTextractResponse(&response, &config)
