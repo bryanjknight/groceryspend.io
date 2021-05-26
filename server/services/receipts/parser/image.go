@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"math"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/service/textract"
 	"github.com/montanaflynn/stats"
@@ -191,6 +193,68 @@ func findItemFinalPrices(resp *textract.AnalyzeDocumentOutput, maxTopPos float64
 	return retval, nil
 }
 
+type linearRegression struct {
+	slope        float64
+	intersection float64
+}
+
+func calculateSlopes(polygon []*textract.Point) (*linearRegression, *linearRegression, error) {
+
+	if len(polygon) != 4 {
+		println(fmt.Sprintf("Only support 4 points, got %v", len(polygon)))
+		return nil, nil, fmt.Errorf("Only support 4 points, got %v", len(polygon))
+	}
+
+	// FIXME: we assume the order of points, so add logic to verify this is accurate
+
+	topLeft := polygon[0]
+	topRight := polygon[1]
+	bottomRight := polygon[2]
+	bottomLeft := polygon[3]
+
+	topLineSlope := (*topRight.Y - *topLeft.Y) / (*topRight.X - *topLeft.X)
+	topLineIntersect := *topLeft.Y - *topLeft.X*topLineSlope
+
+	bottomLineSlope := (*bottomRight.Y - *bottomLeft.Y) / (*bottomRight.X - *bottomLeft.X)
+	bottomLineIntersect := *bottomLeft.Y - *bottomLeft.X*bottomLineSlope
+
+	return &linearRegression{slope: topLineSlope, intersection: topLineIntersect}, &linearRegression{slope: bottomLineSlope, intersection: bottomLineIntersect}, nil
+
+}
+
+func findBlocksByLinearSlope(resp *textract.AnalyzeDocumentOutput, topLine *linearRegression, bottomLine *linearRegression, tolerance float64) []*textract.Block {
+
+	retval := []*textract.Block{}
+
+	// TODO: we don't need to go through all blocks, just the ones within the item range
+	for _, block := range resp.Blocks {
+		if *block.BlockType != "LINE" {
+			continue
+		}
+
+		// FIXME: we assume the order of points, so add logic to verify this is accurate
+		polygon := block.Geometry.Polygon
+		topLeft := polygon[0]
+		// topRight := polygon[1]
+		// bottomRight := polygon[2]
+		bottomLeft := polygon[3]
+
+		desiredTopLeftY := *topLeft.X*topLine.slope + topLine.intersection
+		percentOffTopLeft := (desiredTopLeftY - *topLeft.Y) / desiredTopLeftY
+
+		desiredBottomLeftY := *bottomLeft.X*bottomLine.slope + bottomLine.intersection
+		percentOffBottomLeft := (desiredBottomLeftY - *bottomLeft.Y) / desiredBottomLeftY
+
+		if math.Abs(percentOffBottomLeft) < tolerance && math.Abs(percentOffTopLeft) < tolerance {
+			retval = append(retval, block)
+		}
+
+	}
+
+	return retval
+
+}
+
 // TODO: create a config for parsing the response, including the expected total
 //       to verify the parsing was successful
 
@@ -247,7 +311,30 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput) error {
 
 	println(fmt.Sprintf("# of final prices: %v", len(finalPriceBlocks)))
 	for _, p := range finalPriceBlocks {
+
+		topLine, bottomLine, err := calculateSlopes(p.Geometry.Polygon)
+		if err != nil {
+			return err
+		}
+
+		// find blocks that are within some tolerance
+		tolerance := 0.02 // TODO: make this configurable
+
 		println(*p.Text)
+
+		possibleItems := findBlocksByLinearSlope(resp, topLine, bottomLine, tolerance)
+		if len(possibleItems) > 0 {
+			b := []string{}
+
+			for _, possibleItem := range possibleItems {
+				b = append(b, *possibleItem.Text)
+			}
+
+			println(fmt.Sprintf("\tPossible Items: %s", strings.Join(b, " / ")))
+		} else {
+			println("\tNo items found")
+		}
+
 	}
 	println(fmt.Sprintf("# of item lines: %v", len(itemBlocks)))
 
