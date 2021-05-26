@@ -94,7 +94,7 @@ func findNextLine(resp *textract.AnalyzeDocumentOutput, lineBlock *textract.Bloc
 				continue
 			}
 			for childIdx, id := range relation.Ids {
-				if id != lineBlock.Id {
+				if *id != *lineBlock.Id {
 					continue
 				}
 

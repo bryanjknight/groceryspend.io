@@ -17,13 +17,11 @@ func TestTextractResponse(t *testing.T) {
 	err := json.NewDecoder(reader).Decode(&response)
 	if err != nil {
 		println(err.Error())
-		t.Fail()
 	}
 
 	err = ProcessTextractResponse(&response)
 	if err != nil {
 		println(err.Error())
-		t.Fail()
 	}
 	t.Fail()
 }
