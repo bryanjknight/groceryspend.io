@@ -19,7 +19,12 @@ func TestTextractResponse(t *testing.T) {
 		println(err.Error())
 	}
 
-	err = ProcessTextractResponse(&response)
+	config := ImageReceiptParseConfig{
+		maxItemDescYPos: 0.7,
+		tolerance:       0.01,
+	}
+
+	err = ProcessTextractResponse(&response, &config)
 	if err != nil {
 		println(err.Error())
 	}
