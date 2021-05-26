@@ -2,31 +2,11 @@ package parser
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"groceryspend.io/server/services/receipts"
 )
-
-func getTestDataDir() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(
-		filepath.Dir(
-			filepath.Dir(
-				filepath.Dir(
-					filepath.Dir(filename)))), "test", "data")
-}
-
-func readFileAsString(filename string) string {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-
-	return string(b)
-}
 
 func TestRegexParser(t *testing.T) {
 
@@ -46,6 +26,19 @@ func TestRegexParser(t *testing.T) {
 				Discounts:    0.0,
 				SubtotalCost: 34.05,
 				TotalCost:    34.05,
+				Items:        []*receipts.ReceiptItem{},
+			},
+		},
+		{
+			filename: "marketbasket/receipt2.txt",
+			expectedReceipt: &receipts.ReceiptDetail{
+				SalesTax:     0.0,
+				ServiceFee:   0.0,
+				DeliveryFee:  0.0,
+				Tip:          0.0,
+				Discounts:    0.0,
+				SubtotalCost: 117.66,
+				TotalCost:    117.66,
 				Items:        []*receipts.ReceiptItem{},
 			},
 		},
