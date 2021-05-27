@@ -61,21 +61,21 @@ func polygonToYpos(points []*textract.Point) []float64 {
 	return retval
 }
 
-func (s *summarySection) minX() (float64, error) {
+func (s *summarySection) minY() (float64, error) {
 	if s.subTotalBlock == nil && s.taxBlock == nil && s.totalBlock == nil {
 		return 0.0, fmt.Errorf("subtotal, tax, and total are missing")
 	}
 
 	xPos := []float64{}
 	if s.subTotalBlock != nil {
-		xPos = append(xPos, polygonToXpos(s.subTotalBlock.Geometry.Polygon)...)
+		xPos = append(xPos, polygonToYpos(s.subTotalBlock.Geometry.Polygon)...)
 	}
 	if s.taxBlock != nil {
-		xPos = append(xPos, polygonToXpos(s.taxBlock.Geometry.Polygon)...)
+		xPos = append(xPos, polygonToYpos(s.taxBlock.Geometry.Polygon)...)
 	}
 
 	if s.totalBlock != nil {
-		xPos = append(xPos, polygonToXpos(s.totalBlock.Geometry.Polygon)...)
+		xPos = append(xPos, polygonToYpos(s.totalBlock.Geometry.Polygon)...)
 	}
 
 	return stats.Min(xPos)
@@ -229,12 +229,12 @@ func findHeaderRegion(resp *textract.AnalyzeDocumentOutput) *textract.Point {
 		if isHeaderData(*block.Text) {
 			inHeaderDetails = true
 
-			if *headerBottomRight.X < *block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height {
-				headerBottomRight.SetX(*block.Geometry.BoundingBox.Top + *block.Geometry.BoundingBox.Height)
+			if *headerBottomRight.X < (*block.Geometry.BoundingBox.Left + *block.Geometry.BoundingBox.Width) {
+				headerBottomRight.SetX(*block.Geometry.BoundingBox.Left + *block.Geometry.BoundingBox.Width)
 			}
 
-			if *headerBottomRight.Y < *block.Geometry.BoundingBox.Left+*block.Geometry.BoundingBox.Width {
-				headerBottomRight.SetY(*block.Geometry.BoundingBox.Left + *block.Geometry.BoundingBox.Width)
+			if *headerBottomRight.Y < *block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height {
+				headerBottomRight.SetY(*block.Geometry.BoundingBox.Top + *block.Geometry.BoundingBox.Height)
 			}
 
 		} else if inHeaderDetails {
@@ -256,10 +256,10 @@ func findBlocksByRegion(resp *textract.AnalyzeDocumentOutput, topLeft *textract.
 	}
 
 	for _, block := range resp.Blocks {
-		if *block.Geometry.BoundingBox.Top >= *topLeft.X &&
-			*block.Geometry.BoundingBox.Left >= *topLeft.Y &&
-			*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height <= *bottomRight.X &&
-			*block.Geometry.BoundingBox.Left+*block.Geometry.BoundingBox.Width <= *bottomRight.Y {
+		if *block.Geometry.BoundingBox.Top >= *topLeft.Y &&
+			*block.Geometry.BoundingBox.Left >= *topLeft.X &&
+			*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height <= *bottomRight.Y &&
+			*block.Geometry.BoundingBox.Left+*block.Geometry.BoundingBox.Width <= *bottomRight.X {
 			retval = append(retval, block)
 		}
 	}
@@ -267,7 +267,10 @@ func findBlocksByRegion(resp *textract.AnalyzeDocumentOutput, topLeft *textract.
 	return retval
 }
 
-func findItemFinalPrices(resp *textract.AnalyzeDocumentOutput, maxTopPos float64) ([]*textract.Block, error) {
+func findItemFinalPrices(
+	resp *textract.AnalyzeDocumentOutput,
+	maxYPos float64,
+	tolerance float64) ([]*textract.Block, error) {
 	pass1 := []*textract.Block{}
 	leftPos := []float64{}
 
@@ -276,7 +279,7 @@ func findItemFinalPrices(resp *textract.AnalyzeDocumentOutput, maxTopPos float64
 	for _, block := range resp.Blocks {
 		if *block.BlockType == textract.BlockTypeLine &&
 			priceRegex.MatchString(*block.Text) &&
-			*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height < maxTopPos {
+			(1.0-tolerance)*(*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height) < maxYPos {
 			pass1 = append(pass1, block)
 			leftPos = append(leftPos, *block.Geometry.BoundingBox.Left)
 		}
@@ -386,7 +389,7 @@ func findBlocksByLinearSlope(
 
 // ImageReceiptParseConfig - options to configure how the textract response is processed
 type ImageReceiptParseConfig struct {
-	maxItemDescYPos float64
+	maxItemDescXPos float64
 	tolerance       float64
 }
 
@@ -424,13 +427,15 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 		return fmt.Errorf("missing subtotal, tax, and total")
 	}
 
-	summaryTopXPos, err := summary.minX()
+	summaryTopYPos, err := summary.minY()
 	if err != nil {
 		return err
 	}
 
+	println(fmt.Sprintf("Top Summary Y Pos: %.5f", summaryTopYPos))
+
 	// TODO: should we pass the header bottom x pos?
-	finalPriceBlocks, _ := findItemFinalPrices(resp, summaryTopXPos)
+	finalPriceBlocks, _ := findItemFinalPrices(resp, summaryTopYPos, config.tolerance)
 
 	// now run through the blocks again, this time looking for potential items
 	// within the bounds of the final prices
@@ -441,16 +446,16 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 			!departmentNamesRegex.MatchString(*block.Text) &&
 
 			// the top edge of the box doesn't go past the header section
-			utils.IsWithinTolerance(*block.Geometry.BoundingBox.Top, *headerBottomRight.X, config.tolerance) &&
+			utils.IsWithinTolerance(*block.Geometry.BoundingBox.Top, *headerBottomRight.Y, config.tolerance) &&
 
-			// the right edge of the box doesn't go past hte max item description position
+			// the right edge of the box doesn't go past the max item description position
 			utils.IsWithinTolerance(*block.Geometry.BoundingBox.Left+*block.Geometry.BoundingBox.Width,
-				config.maxItemDescYPos,
+				config.maxItemDescXPos,
 				config.tolerance) &&
 
 			// the bottom edge of the box doesn't go past the summary section
 			utils.IsWithinTolerance(*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height,
-				summaryTopXPos, config.tolerance) {
+				summaryTopYPos, config.tolerance) {
 			itemBlocks = append(itemBlocks, block)
 		}
 	}
@@ -466,7 +471,7 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 		// find blocks that are within some tolerance
 		println(*p.Text)
 
-		possibleItems := findBlocksByLinearSlope(resp, topLine, bottomLine, config.maxItemDescYPos, config.tolerance)
+		possibleItems := findBlocksByLinearSlope(resp, topLine, bottomLine, config.maxItemDescXPos, config.tolerance)
 		if len(possibleItems) > 0 {
 			b := []string{}
 
