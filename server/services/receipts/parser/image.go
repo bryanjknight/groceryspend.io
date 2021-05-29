@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/textract"
@@ -218,7 +217,10 @@ func findHeaderRegion(resp *textract.AnalyzeDocumentOutput) *textract.Point {
 		return dateRegex.MatchString(line) ||
 			timeRegex.MatchString(line) ||
 			addressRegex.MatchString(line) ||
-			townCityZipRegex.MatchString(line)
+			townCityZipRegex.MatchString(line) ||
+			cashierRegex.MatchString(line) ||
+			storeRegex.MatchString(line) ||
+			phoneNumberRegex.MatchString(line)
 	}
 
 	for _, block := range resp.Blocks {
@@ -279,7 +281,10 @@ func findItemFinalPrices(
 	for _, block := range resp.Blocks {
 		if *block.BlockType == textract.BlockTypeLine &&
 			priceRegex.MatchString(*block.Text) &&
-			(1.0-tolerance)*(*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height) < maxYPos {
+			utils.IsLessThanWithinTolerance(
+				maxYPos,
+				(*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height),
+				tolerance) {
 			pass1 = append(pass1, block)
 			leftPos = append(leftPos, *block.Geometry.BoundingBox.Left)
 		}
@@ -343,24 +348,19 @@ func calculateSlopes(polygon []*textract.Point) (*linearRegression, *linearRegre
 }
 
 func findBlocksByLinearSlope(
-	resp *textract.AnalyzeDocumentOutput,
+	itemBlocks []*textract.Block,
 	topLine *linearRegression,
 	bottomLine *linearRegression,
-	desiredMaxYPos float64,
-	tolerance float64) []*textract.Block {
+	config *ImageReceiptParseConfig) []*textract.Block {
 
 	retval := []*textract.Block{}
 
-	// TODO: we don't need to go through all blocks, just the ones within the item range
-	for _, block := range resp.Blocks {
-		if *block.BlockType != "LINE" {
-			continue
-		}
+	for _, block := range itemBlocks {
 
-		// get all y positions
-		yPos := polygonToYpos(block.Geometry.Polygon)
-
-		if maxYPos, _ := stats.Max(yPos); maxYPos > desiredMaxYPos {
+		// /remove an
+		xPos := polygonToXpos(block.Geometry.Polygon)
+		if maxXPos, _ := stats.Max(xPos); !utils.IsLessThanWithinTolerance(
+			config.maxItemDescXPos, maxXPos, config.tolerance) {
 			continue
 		}
 
@@ -372,12 +372,10 @@ func findBlocksByLinearSlope(
 		bottomLeft := polygon[3]
 
 		desiredTopLeftY := *topLeft.X*topLine.slope + topLine.intersection
-		percentOffTopLeft := (desiredTopLeftY - *topLeft.Y) / desiredTopLeftY
-
 		desiredBottomLeftY := *bottomLeft.X*bottomLine.slope + bottomLine.intersection
-		percentOffBottomLeft := (desiredBottomLeftY - *bottomLeft.Y) / desiredBottomLeftY
 
-		if math.Abs(percentOffBottomLeft) < tolerance && math.Abs(percentOffTopLeft) < tolerance {
+		if utils.IsWithinTolerance(desiredTopLeftY, *topLeft.Y, config.tolerance) &&
+			utils.IsWithinTolerance(desiredBottomLeftY, *bottomLeft.Y, config.tolerance) {
 			retval = append(retval, block)
 		}
 
@@ -387,6 +385,50 @@ func findBlocksByLinearSlope(
 
 }
 
+func findItemBlocks(
+	resp *textract.AnalyzeDocumentOutput,
+	headerBottomRight *textract.Point,
+	summaryTopYPos float64,
+	config *ImageReceiptParseConfig) []*textract.Block {
+
+	itemBlocks := []*textract.Block{}
+	for _, block := range resp.Blocks {
+		if *block.BlockType == textract.BlockTypeLine &&
+
+			// it's not a department name
+			!departmentNamesRegex.MatchString(*block.Text) &&
+
+			// the top edge of the box doesn't go past the header section
+			utils.IsGreaterThanWithinTolerance(
+				*headerBottomRight.Y,
+				*block.Geometry.BoundingBox.Top,
+				config.tolerance) &&
+
+			// the right edge of the box doesn't go past the max item description position
+			utils.IsLessThanWithinTolerance(
+				config.maxItemDescXPos,
+				*block.Geometry.BoundingBox.Left+*block.Geometry.BoundingBox.Width,
+				config.tolerance) &&
+
+			// the bottom edge of the box doesn't go past the summary section
+			utils.IsLessThanWithinTolerance(
+				summaryTopYPos,
+				*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height,
+				config.tolerance) {
+			itemBlocks = append(itemBlocks, block)
+		}
+	}
+
+	return itemBlocks
+}
+
+// func matchLineItemWithPrice(
+// 	items []*textract.Block,
+// 	prices []*textract.Block,
+// 	possibleItemToPrice []*textract.Block) {
+
+// }
+
 // ImageReceiptParseConfig - options to configure how the textract response is processed
 type ImageReceiptParseConfig struct {
 	maxItemDescXPos float64
@@ -395,8 +437,6 @@ type ImageReceiptParseConfig struct {
 
 // ProcessTextractResponse - find a better name
 func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *ImageReceiptParseConfig) error {
-
-	itemBlocks := []*textract.Block{}
 
 	// TODO: we do multiple O(N) operations against the array of blocks
 	// an optimization could be to better structure the data for easier
@@ -432,33 +472,33 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 		return err
 	}
 
-	println(fmt.Sprintf("Top Summary Y Pos: %.5f", summaryTopYPos))
-
 	// TODO: should we pass the header bottom x pos?
 	finalPriceBlocks, _ := findItemFinalPrices(resp, summaryTopYPos, config.tolerance)
 
+	// println("---")
+	// println("Prices defined by boundaries")
+	// println("---")
+	// for _, i := range finalPriceBlocks {
+	// 	top, bottom, _ := calculateSlopes(i.Geometry.Polygon)
+	// 	println(fmt.Sprintf("%s (%s) (%.5fx %.5f) (%.5fx %.5f)", *i.Text, i.Geometry.BoundingBox.GoString(), top.slope, top.intersection, bottom.slope, bottom.intersection))
+	// }
+	// println("---")
+
 	// now run through the blocks again, this time looking for potential items
 	// within the bounds of the final prices
-	for _, block := range resp.Blocks {
-		if *block.BlockType == textract.BlockTypeLine &&
+	itemBlocks := findItemBlocks(resp, headerBottomRight, summaryTopYPos, config)
 
-			// it's not a department name
-			!departmentNamesRegex.MatchString(*block.Text) &&
+	// println("---")
+	// println("Items defined by boundaries")
+	// println("---")
+	// for _, i := range itemBlocks {
+	// 	println(fmt.Sprintf("%s (%s)", *i.Text, i.Geometry.BoundingBox.GoString()))
+	// }
+	// println("---")
 
-			// the top edge of the box doesn't go past the header section
-			utils.IsWithinTolerance(*block.Geometry.BoundingBox.Top, *headerBottomRight.Y, config.tolerance) &&
-
-			// the right edge of the box doesn't go past the max item description position
-			utils.IsWithinTolerance(*block.Geometry.BoundingBox.Left+*block.Geometry.BoundingBox.Width,
-				config.maxItemDescXPos,
-				config.tolerance) &&
-
-			// the bottom edge of the box doesn't go past the summary section
-			utils.IsWithinTolerance(*block.Geometry.BoundingBox.Top+*block.Geometry.BoundingBox.Height,
-				summaryTopYPos, config.tolerance) {
-			itemBlocks = append(itemBlocks, block)
-		}
-	}
+	// array index matches itemBlocks idx
+	// array index value matches price blocks idx
+	itemDescToPrice := make([]*textract.Block, len(itemBlocks))
 
 	println(fmt.Sprintf("# of final prices: %v", len(finalPriceBlocks)))
 	for _, p := range finalPriceBlocks {
@@ -468,24 +508,50 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 			return err
 		}
 
-		// find blocks that are within some tolerance
-		println(*p.Text)
-
-		possibleItems := findBlocksByLinearSlope(resp, topLine, bottomLine, config.maxItemDescXPos, config.tolerance)
+		possibleItems := findBlocksByLinearSlope(itemBlocks, topLine, bottomLine, config)
 		if len(possibleItems) > 0 {
 			b := []string{}
 
 			for _, possibleItem := range possibleItems {
+
+				for itemIdx, item := range itemBlocks {
+					if item == possibleItem {
+						itemDescToPrice[itemIdx] = p
+					}
+				}
+
 				b = append(b, *possibleItem.Text)
 			}
 
-			println(fmt.Sprintf("\tPossible Items: %s", strings.Join(b, " / ")))
+			// println(fmt.Sprintf("\tPossible Items: %s", strings.Join(b, " / ")))
 		} else {
 			println("\tNo items found")
 		}
 
 	}
-	println(fmt.Sprintf("# of item lines: %v", len(itemBlocks)))
+
+	var currentPrice *textract.Block
+	buffer := strings.Builder{}
+	for itemIdx, item := range itemBlocks {
+		priceBlock := itemDescToPrice[itemIdx]
+		if priceBlock != nil && currentPrice == nil {
+			// possible end of the item
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+			currentPrice = priceBlock
+		} else if priceBlock != nil && priceBlock == currentPrice {
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+		} else if priceBlock != currentPrice {
+			// new item
+			println(fmt.Sprintf("%s / %s", strings.TrimSpace(buffer.String()), *currentPrice.Text))
+			buffer.Reset()
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+			currentPrice = priceBlock
+		} else if priceBlock == nil {
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+		}
+	}
+
+	println(fmt.Sprintf("%s / %s", strings.TrimSpace(buffer.String()), *currentPrice.Text))
 
 	return nil
 

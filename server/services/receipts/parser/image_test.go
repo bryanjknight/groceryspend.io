@@ -23,7 +23,7 @@ func TestTextractResponse(t *testing.T) {
 		{
 			file: filepath.Join(getTestDataDir(), "marketbasket", "receipt1-apiResponse.json"),
 			config: &ImageReceiptParseConfig{
-				maxItemDescXPos: 0.7,
+				maxItemDescXPos: 0.6,
 				tolerance:       0.015,
 			},
 			expectedResult: nil,
@@ -31,8 +31,8 @@ func TestTextractResponse(t *testing.T) {
 		{
 			file: filepath.Join(getTestDataDir(), "hannaford", "receipt1-apiResponse.json"),
 			config: &ImageReceiptParseConfig{
-				maxItemDescXPos: 0.7,
-				tolerance:       0.015,
+				maxItemDescXPos: 0.6,
+				tolerance:       0.035,
 			},
 			expectedResult: nil,
 		},

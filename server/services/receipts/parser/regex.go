@@ -10,9 +10,11 @@ import (
 )
 
 // collection of regexes
-var phoneNumberRegex = regexp.MustCompile(`(\(\d{3}\)-)?\d{3}-\d{4}`)
+var phoneNumberRegex = regexp.MustCompile(`(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}`)
 var addressRegex = regexp.MustCompile(`(?i)\d+ [A-Z 0-9]+ [A-Z]{2,5}`)
-var townCityZipRegex = regexp.MustCompile(`(?i)\[A-Z ]+, [A-Z]{2} \d{5}(-\d{4})?`)
+var townCityZipRegex = regexp.MustCompile(`(?i)[A-Z ]+, [A-Z]{2} \d{5}(-\d{4})?`)
+var cashierRegex = regexp.MustCompile(`(?i)cashier:? [a-z0-9 ]+`)
+var storeRegex = regexp.MustCompile(`(?i)store:? \d{1,5}`)
 
 // TODO: use levenshtein distance to judge whether stop word hit because of misread characters
 var departmentNamesRegex = regexp.MustCompile(`(?i)(dairy|produce|froduce|meat|grocery)`)
