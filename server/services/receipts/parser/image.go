@@ -24,19 +24,6 @@ type summarySection struct {
 	totalBlock    *textract.Block
 }
 
-func (s *summarySection) String() {
-	b := strings.Builder{}
-	if s.subTotalBlock != nil {
-		b.WriteString(fmt.Sprintf("Sub Total: %s\n", *s.subTotalBlock.Text))
-	}
-	if s.taxBlock != nil {
-		b.WriteString(fmt.Sprintf("Tax: %s\n", *s.taxBlock.Text))
-	}
-	if s.totalBlock != nil {
-		b.WriteString(fmt.Sprintf("Total: %s\n", *s.totalBlock.Text))
-	}
-}
-
 func polygonToXpos(points []*textract.Point) []float64 {
 	if points == nil {
 		return nil
@@ -83,7 +70,27 @@ func (s *summarySection) minY() (float64, error) {
 	return stats.Min(xPos)
 }
 
-func findSummarySection(resp *textract.AnalyzeDocumentOutput) (*summarySection, error) {
+func findPriceViaLinearRegression(block *textract.Block, candidateBlocks []*textract.Block, config *ImageReceiptParseConfig) (*textract.Block, error) {
+	// calculate regression line for
+	topLine, bottomLine, err := calculateSlopes(block.Geometry.Polygon)
+	if err != nil {
+		return nil, err
+	}
+
+	possibleItems := findBlocksByLinearSlope(candidateBlocks, topLine, bottomLine, config)
+
+	// go through blocks
+	for _, possibleItem := range possibleItems {
+		// if it's a match, and it's a price, then return it
+		if priceRegex.MatchString(*possibleItem.Text) {
+			return possibleItem, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find price using block id: %s", *block.Id)
+}
+
+func findSummarySection(resp *textract.AnalyzeDocumentOutput, config *ImageReceiptParseConfig) (*summarySection, error) {
 	// typically the format is <subtotal | tax | total> (whitespace) <total value>
 	// so, we will look for the the words, then verify the current line or next line is the
 	// actual value
@@ -91,21 +98,21 @@ func findSummarySection(resp *textract.AnalyzeDocumentOutput) (*summarySection, 
 
 	for _, block := range resp.Blocks {
 		if *block.BlockType == "LINE" && subtotalRegex.MatchString(*block.Text) {
-			subTotalBlock, err := findNextLine(resp, block)
+			subTotalBlock, err := findPriceViaLinearRegression(block, resp.Blocks, config)
 			if err != nil {
 				return nil, err
 			}
 
 			retval.subTotalBlock = subTotalBlock
 		} else if *block.BlockType == "LINE" && taxRegex.MatchString(*block.Text) {
-			taxBlock, err := findNextLine(resp, block)
+			taxBlock, err := findPriceViaLinearRegression(block, resp.Blocks, config)
 			if err != nil {
 				return nil, err
 			}
 
 			retval.taxBlock = taxBlock
 		} else if *block.BlockType == "LINE" && totalRegex.MatchString(*block.Text) {
-			totalBlock, err := findNextLine(resp, block)
+			totalBlock, err := findPriceViaLinearRegression(block, resp.Blocks, config)
 			if err != nil {
 				return nil, err
 			}
@@ -189,12 +196,6 @@ func findItemFinalPrices(
 	if err != nil {
 		return nil, err
 	}
-	// stdDev, err := stats.StandardDeviation(leftPos)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// println(fmt.Sprintf("mean %.5f, std dev: %.5f", mean, stdDev))
 
 	retval := []*textract.Block{}
 
@@ -309,7 +310,7 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 	// find the total/subtotal/tax sections. This will denote where
 	// the items finish up (so we don't count them towards the items)
 
-	summary, err := findSummarySection(resp)
+	summary, err := findSummarySection(resp, config)
 	if err != nil {
 		return nil, err
 	}
@@ -445,6 +446,7 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 			retval, err := processTextractResponse(resp, &ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance})
 			if err != nil {
 				// TODO: if it's the missing data error, we should immediately return
+				//       to avoid running it multiple time
 				println(err.Error())
 				continue
 			}
