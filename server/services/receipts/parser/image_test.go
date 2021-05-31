@@ -2,7 +2,6 @@ package parser
 
 import (
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -30,12 +29,14 @@ func TestTextractResponse(t *testing.T) {
 			expectedTotal:  29.92,
 			expectedResult: nil,
 		},
+		{
+			file:           filepath.Join(getTestDataDir(), "wegmans", "receipt1-apiResponse.json"),
+			expectedTotal:  64.01,
+			expectedResult: nil,
+		},
 	}
 
 	for _, testInstance := range tests {
-		println("")
-		println(fmt.Sprintf("Processing %s", testInstance.file))
-		println("")
 		var response textract.AnalyzeDocumentOutput
 		fileText := readFileAsString(testInstance.file)
 		reader := strings.NewReader(fileText)
@@ -46,9 +47,9 @@ func TestTextractResponse(t *testing.T) {
 
 		receiptDetail, err := ParseImageReceipt(&response, testInstance.expectedTotal)
 		if err != nil {
-			t.Error(err.Error())
+			t.Errorf("error while processing %s: %s", testInstance.file, err.Error())
 		} else if receiptDetail == nil {
-			t.Errorf("didn't get receipt detail")
+			t.Errorf("didn't get receipt detail for %s", testInstance.file)
 		} else {
 			// debug, print the details
 			for _, i := range receiptDetail.Items {
