@@ -100,10 +100,11 @@ func findSummarySection(resp *textract.AnalyzeDocumentOutput, config *ImageRecei
 		if *block.BlockType == "LINE" && subtotalRegex.MatchString(*block.Text) {
 			subTotalBlock, err := findPriceViaLinearRegression(block, resp.Blocks, config)
 			if err != nil {
-				return nil, err
+				println("failed to find a sub total, but can continue")
+			} else {
+				retval.subTotalBlock = subTotalBlock
 			}
 
-			retval.subTotalBlock = subTotalBlock
 		} else if *block.BlockType == "LINE" && taxRegex.MatchString(*block.Text) {
 			taxBlock, err := findPriceViaLinearRegression(block, resp.Blocks, config)
 			if err != nil {
@@ -316,6 +317,8 @@ func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textra
 
 			for _, possibleItem := range possibleItems {
 
+				// go back through the possible item blocks
+				// and tie them to the probable price
 				for itemIdx, item := range itemBlocks {
 					if item == possibleItem {
 						itemDescToPrice[itemIdx] = p
@@ -362,7 +365,7 @@ func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textra
 		return nil, fmt.Errorf("null current price at end of price/line search")
 	}
 
-	lastItem, err := createReceiptItem(strings.TrimSpace(buffer.String()), currentPrice)
+	lastItem, err := createReceiptItem(buffer.String(), currentPrice)
 	if err != nil {
 		return nil, err
 	}
@@ -456,10 +459,10 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 	// match in the price->item desc logic. We'll try to increase the max X pos of the item desc
 	// but not a good sign
 
-	for maxXPos := 0.6; maxXPos <= 0.8; maxXPos += 0.1 {
+	for maxXPos := 0.6; maxXPos <= 0.8; maxXPos += 0.05 {
 		// we'll increment it by 0.01.
 		// FIXME: we should use a binary search as opposed to iterative search
-		for tolerance := 0.0; tolerance <= 0.1; tolerance += 0.005 {
+		for tolerance := 0.0; tolerance <= 0.1; tolerance += 0.001 {
 
 			println(fmt.Sprintf("Trying tolerance %v, maxXPos: %v", tolerance, maxXPos))
 			retval, err := processTextractResponse(resp, &ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance})
