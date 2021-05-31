@@ -173,6 +173,7 @@ func findHeaderRegion(resp *textract.AnalyzeDocumentOutput) *textract.Point {
 
 func findItemFinalPrices(
 	resp *textract.AnalyzeDocumentOutput,
+	minYPos float64,
 	maxYPos float64,
 	tolerance float64) ([]*textract.Block, error) {
 	pass1 := []*textract.Block{}
@@ -206,7 +207,7 @@ func findItemFinalPrices(
 		// right justified), whether it has a suffix code (e.g. F, *, or W)
 		// (usually yes), and whether unit price is included (also usually yes)
 
-		if *block.Geometry.BoundingBox.Left > mean {
+		if utils.IsGreaterThanWithinTolerance(mean, *block.Geometry.BoundingBox.Left, tolerance) {
 			retval = append(retval, block)
 		}
 	}
@@ -423,7 +424,7 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 	}
 
 	// TODO: should we pass the header bottom x pos?
-	finalPriceBlocks, err := findItemFinalPrices(resp, summaryTopYPos, config.tolerance)
+	finalPriceBlocks, err := findItemFinalPrices(resp, *headerBottomRight.Y, summaryTopYPos, config.tolerance)
 	if err != nil {
 		return nil, err
 	}
@@ -459,17 +460,17 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 	// match in the price->item desc logic. We'll try to increase the max X pos of the item desc
 	// but not a good sign
 
-	for maxXPos := 0.6; maxXPos <= 0.8; maxXPos += 0.05 {
+	for maxXPos := 0.6; maxXPos <= 0.75; maxXPos += 0.01 {
 		// we'll increment it by 0.01.
 		// FIXME: we should use a binary search as opposed to iterative search
-		for tolerance := 0.0; tolerance <= 0.1; tolerance += 0.001 {
+		for tolerance := 0.0; tolerance <= 0.5; tolerance += 0.001 {
 
 			println(fmt.Sprintf("Trying tolerance %v, maxXPos: %v", tolerance, maxXPos))
 			retval, err := processTextractResponse(resp, &ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance})
 			if err != nil {
 				// TODO: if it's the missing data error, we should immediately return
 				//       to avoid running it multiple time
-				println(err.Error())
+				// println(err.Error())
 				continue
 			}
 
@@ -486,11 +487,11 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 			if actualTotal == int(expectedTotal*100.0) {
 				return retval, nil
 			} else if actualTotal < int(expectedTotal*100) {
-				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal/100.0))
+				// increasing tolerance may result in the missing items being added
 				continue
 			} else {
-				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal/100.0))
-				println("went over, so breaking")
+				// we have increased the tolerance too much, switch to
+				// increasing the max length of the item description
 				break
 			}
 		}

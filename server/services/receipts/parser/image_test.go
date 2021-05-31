@@ -34,29 +34,29 @@ func TestTextractResponse(t *testing.T) {
 			expectedTotal:  64.01,
 			expectedResult: nil,
 		},
+		{
+			file:           filepath.Join(getTestDataDir(), "wegmans", "receipt2-apiResponse.json"),
+			expectedTotal:  55.51,
+			expectedResult: nil,
+		},
 	}
 
 	for _, testInstance := range tests {
-		var response textract.AnalyzeDocumentOutput
-		fileText := readFileAsString(testInstance.file)
-		reader := strings.NewReader(fileText)
-		err := json.NewDecoder(reader).Decode(&response)
-		if err != nil {
-			println(err.Error())
-		}
-
-		receiptDetail, err := ParseImageReceipt(&response, testInstance.expectedTotal)
-		if err != nil {
-			t.Errorf("error while processing %s: %s", testInstance.file, err.Error())
-		} else if receiptDetail == nil {
-			t.Errorf("didn't get receipt detail for %s", testInstance.file)
-		} else {
-			// debug, print the details
-			for _, i := range receiptDetail.Items {
-				t.Logf("%s: %v", i.Name, i.TotalCost)
+		t.Run(testInstance.file, func(t *testing.T) {
+			var response textract.AnalyzeDocumentOutput
+			fileText := readFileAsString(testInstance.file)
+			reader := strings.NewReader(fileText)
+			err := json.NewDecoder(reader).Decode(&response)
+			if err != nil {
+				println(err.Error())
 			}
 
-		}
-
+			receiptDetail, err := ParseImageReceipt(&response, testInstance.expectedTotal)
+			if err != nil {
+				t.Errorf("error while processing %s: %s", testInstance.file, err.Error())
+			} else if receiptDetail == nil {
+				t.Errorf("didn't get receipt detail for %s", testInstance.file)
+			}
+		})
 	}
 }
