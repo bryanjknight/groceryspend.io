@@ -521,6 +521,13 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 	}
 
 	retval := receipts.ReceiptDetail{}
+
+	taxParse := priceRegex.FindStringSubmatch(*summary.taxBlock.Text)
+	tax, err := strconv.ParseFloat(taxParse[1], 32)
+	if err != nil {
+		return nil, err
+	}
+	retval.SalesTax = float32(tax)
 	items := []*receipts.ReceiptItem{}
 	var currentPrice *textract.Block
 	buffer := strings.Builder{}
