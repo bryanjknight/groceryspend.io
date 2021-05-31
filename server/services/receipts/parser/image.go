@@ -100,7 +100,7 @@ func findSummarySection(resp *textract.AnalyzeDocumentOutput, config *ImageRecei
 		if *block.BlockType == "LINE" && subtotalRegex.MatchString(*block.Text) {
 			subTotalBlock, err := findPriceViaLinearRegression(block, resp.Blocks, config)
 			if err != nil {
-				println("failed to find a sub total, but can continue")
+				continue
 			} else {
 				retval.subTotalBlock = subTotalBlock
 			}
