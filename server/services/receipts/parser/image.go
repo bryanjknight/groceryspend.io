@@ -465,7 +465,7 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 		// FIXME: we should use a binary search as opposed to iterative search
 		for tolerance := 0.0; tolerance <= 0.5; tolerance += 0.001 {
 
-			println(fmt.Sprintf("Trying tolerance %v, maxXPos: %v", tolerance, maxXPos))
+			// println(fmt.Sprintf("Trying tolerance %v, maxXPos: %v", tolerance, maxXPos))
 			retval, err := processTextractResponse(resp, &ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance})
 			if err != nil {
 				// TODO: if it's the missing data error, we should immediately return
