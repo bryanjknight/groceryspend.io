@@ -16,24 +16,18 @@ func TestTextractResponse(t *testing.T) {
 	type test struct {
 		file           string
 		expectedResult *receipts.ReceiptDetail
-		config         *ImageReceiptParseConfig
+		expectedTotal  float32
 	}
 
 	tests := []test{
 		{
-			file: filepath.Join(getTestDataDir(), "marketbasket", "receipt1-apiResponse.json"),
-			config: &ImageReceiptParseConfig{
-				maxItemDescXPos: 0.6,
-				tolerance:       0.015,
-			},
+			file:           filepath.Join(getTestDataDir(), "marketbasket", "receipt1-apiResponse.json"),
+			expectedTotal:  34.05,
 			expectedResult: nil,
 		},
 		{
-			file: filepath.Join(getTestDataDir(), "hannaford", "receipt1-apiResponse.json"),
-			config: &ImageReceiptParseConfig{
-				maxItemDescXPos: 0.6,
-				tolerance:       0.035,
-			},
+			file:           filepath.Join(getTestDataDir(), "hannaford", "receipt1-apiResponse.json"),
+			expectedTotal:  29.92,
 			expectedResult: nil,
 		},
 	}
@@ -50,11 +44,18 @@ func TestTextractResponse(t *testing.T) {
 			println(err.Error())
 		}
 
-		err = ProcessTextractResponse(&response, testInstance.config)
+		receiptDetail, err := ParseImageReceipt(&response, testInstance.expectedTotal)
 		if err != nil {
-			println(err.Error())
+			t.Error(err.Error())
+		} else if receiptDetail == nil {
+			t.Errorf("didn't get receipt detail")
+		} else {
+			// debug, print the details
+			for _, i := range receiptDetail.Items {
+				t.Logf("%s: %v", i.Name, i.TotalCost)
+			}
+
 		}
 
 	}
-	t.Fail()
 }

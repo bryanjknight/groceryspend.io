@@ -2,10 +2,13 @@ package parser
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/textract"
 	"github.com/montanaflynn/stats"
+	"groceryspend.io/server/services/receipts"
 	"groceryspend.io/server/utils"
 )
 
@@ -435,8 +438,11 @@ type ImageReceiptParseConfig struct {
 	tolerance       float64
 }
 
-// ProcessTextractResponse - find a better name
-func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *ImageReceiptParseConfig) error {
+// Given a configuration, try to parse out the details
+func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *ImageReceiptParseConfig) (*receipts.ReceiptDetail, error) {
+	// Note: X goes from left to right, Y goes from top to bottom. Therefore
+	//       (0,0) is the top left, (N, 0) is the top right, (0,M) is the bottom left,
+	// 			 and (N, M) is bottom right
 
 	// TODO: we do multiple O(N) operations against the array of blocks
 	// an optimization could be to better structure the data for easier
@@ -459,42 +465,28 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 
 	summary, err := findSummarySection(resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// verify I have everything I need
 	if summary.subTotalBlock == nil && summary.taxBlock == nil && summary.totalBlock == nil {
-		return fmt.Errorf("missing subtotal, tax, and total")
+		return nil, fmt.Errorf("missing subtotal, tax, and total")
 	}
 
 	summaryTopYPos, err := summary.minY()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: should we pass the header bottom x pos?
-	finalPriceBlocks, _ := findItemFinalPrices(resp, summaryTopYPos, config.tolerance)
-
-	// println("---")
-	// println("Prices defined by boundaries")
-	// println("---")
-	// for _, i := range finalPriceBlocks {
-	// 	top, bottom, _ := calculateSlopes(i.Geometry.Polygon)
-	// 	println(fmt.Sprintf("%s (%s) (%.5fx %.5f) (%.5fx %.5f)", *i.Text, i.Geometry.BoundingBox.GoString(), top.slope, top.intersection, bottom.slope, bottom.intersection))
-	// }
-	// println("---")
+	finalPriceBlocks, err := findItemFinalPrices(resp, summaryTopYPos, config.tolerance)
+	if err != nil {
+		return nil, err
+	}
 
 	// now run through the blocks again, this time looking for potential items
 	// within the bounds of the final prices
 	itemBlocks := findItemBlocks(resp, headerBottomRight, summaryTopYPos, config)
-
-	// println("---")
-	// println("Items defined by boundaries")
-	// println("---")
-	// for _, i := range itemBlocks {
-	// 	println(fmt.Sprintf("%s (%s)", *i.Text, i.Geometry.BoundingBox.GoString()))
-	// }
-	// println("---")
 
 	// array index matches itemBlocks idx
 	// array index value matches price blocks idx
@@ -505,7 +497,7 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 
 		topLine, bottomLine, err := calculateSlopes(p.Geometry.Polygon)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		possibleItems := findBlocksByLinearSlope(itemBlocks, topLine, bottomLine, config)
@@ -522,14 +514,14 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 
 				b = append(b, *possibleItem.Text)
 			}
-
-			// println(fmt.Sprintf("\tPossible Items: %s", strings.Join(b, " / ")))
 		} else {
-			println("\tNo items found")
+			return nil, fmt.Errorf("unable to find item desc for price block %s", *p.Id)
 		}
 
 	}
 
+	retval := receipts.ReceiptDetail{}
+	items := []*receipts.ReceiptItem{}
 	var currentPrice *textract.Block
 	buffer := strings.Builder{}
 	for itemIdx, item := range itemBlocks {
@@ -541,8 +533,20 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 		} else if priceBlock != nil && priceBlock == currentPrice {
 			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
 		} else if priceBlock != currentPrice {
+
+			res := priceRegex.FindStringSubmatch(*currentPrice.Text)
+
+			totalCost, err := strconv.ParseFloat(res[1], 32)
+			if err != nil {
+				return nil, err
+			}
+
 			// new item
-			println(fmt.Sprintf("%s / %s", strings.TrimSpace(buffer.String()), *currentPrice.Text))
+			items = append(items, &receipts.ReceiptItem{
+				Name:      strings.TrimSpace(buffer.String()),
+				TotalCost: float32(totalCost),
+			})
+
 			buffer.Reset()
 			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
 			currentPrice = priceBlock
@@ -551,8 +555,71 @@ func ProcessTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 		}
 	}
 
-	println(fmt.Sprintf("%s / %s", strings.TrimSpace(buffer.String()), *currentPrice.Text))
+	if currentPrice == nil {
+		return nil, fmt.Errorf("null current price at end of price/line search")
+	}
 
-	return nil
+	res := priceRegex.FindStringSubmatch(*currentPrice.Text)
+
+	totalCost, err := strconv.ParseFloat(res[1], 32)
+	if err != nil {
+		return nil, err
+	}
+
+	// new item
+	items = append(items, &receipts.ReceiptItem{
+		Name:      strings.TrimSpace(buffer.String()),
+		TotalCost: float32(totalCost),
+	})
+
+	retval.Items = items
+
+	return &retval, nil
+
+}
+
+// ParseImageReceipt - Try multiple combinations of tolerances to get the right final value
+func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float32) (*receipts.ReceiptDetail, error) {
+
+	// we will slowly increase the the tolerance until we either match the expected total
+	// if we're too low, we'll increase the tolerance. If we go over, then we're letting too much
+	// match in the price->item desc logic. We'll try to increase the max X pos of the item desc
+	// but not a good sign
+
+	for maxXPos := 0.6; maxXPos <= 0.8; maxXPos += 0.1 {
+		// we'll increment it by 0.01.
+		// FIXME: we should use a binary search as opposed to iterative search
+		for tolerance := 0.0; tolerance <= 0.1; tolerance += 0.005 {
+			retval, err := processTextractResponse(resp, &ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance})
+			if err != nil {
+				// TODO: if it's the missing data error, we should immediately return
+				println(err.Error())
+				continue
+			}
+
+			// sum the items and check expected total
+			// note we do some weird cents checking because
+			// float64 and adding gives weird results
+			actualTotal := 0
+			for _, i := range retval.Items {
+				actualTotal += int(math.Round(float64(i.TotalCost) * 100.0))
+			}
+
+			actualTotal += int(retval.SalesTax * 100.0)
+
+			if actualTotal == int(expectedTotal*100.0) {
+				return retval, nil
+			} else if actualTotal < int(expectedTotal*100) {
+				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal))
+				continue
+			} else {
+				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal))
+				println("went over, so breaking")
+				break
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find a xpos/tolerance for this receipt")
 
 }
