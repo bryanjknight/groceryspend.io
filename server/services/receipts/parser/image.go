@@ -82,7 +82,7 @@ func findPriceViaLinearRegression(block *textract.Block, candidateBlocks []*text
 	// go through blocks
 	for _, possibleItem := range possibleItems {
 		// if it's a match, and it's a price, then return it
-		if priceRegex.MatchString(*possibleItem.Text) {
+		if *possibleItem.BlockType == textract.BlockTypeLine && priceRegex.MatchString(*possibleItem.Text) {
 			return possibleItem, nil
 		}
 	}
@@ -279,6 +279,100 @@ func findItemBlocks(
 	return itemBlocks
 }
 
+func createReceiptItem(itemText string, priceBlock *textract.Block) (*receipts.ReceiptItem, error) {
+	var res []string
+	res = priceRegex.FindStringSubmatch(*priceBlock.Text)
+	isDiscount := discountRegex.MatchString(*priceBlock.Text)
+	totalCost, err := strconv.ParseFloat(res[1], 32)
+	if err != nil {
+		return nil, err
+	}
+
+	if isDiscount {
+		totalCost = -totalCost
+	}
+
+	return &receipts.ReceiptItem{
+		Name:      strings.TrimSpace(itemText),
+		TotalCost: float32(totalCost),
+	}, nil
+
+}
+
+func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textract.Block, config *ImageReceiptParseConfig) ([]*receipts.ReceiptItem, error) {
+
+	itemDescToPrice := make([]*textract.Block, len(itemBlocks))
+
+	for _, p := range finalPriceBlocks {
+
+		topLine, bottomLine, err := calculateSlopes(p.Geometry.Polygon)
+		if err != nil {
+			return nil, err
+		}
+
+		possibleItems := findBlocksByLinearSlope(itemBlocks, topLine, bottomLine, config)
+		if len(possibleItems) > 0 {
+			b := []string{}
+
+			for _, possibleItem := range possibleItems {
+
+				for itemIdx, item := range itemBlocks {
+					if item == possibleItem {
+						itemDescToPrice[itemIdx] = p
+					}
+				}
+
+				b = append(b, *possibleItem.Text)
+			}
+		} else {
+			return nil, fmt.Errorf("unable to find item desc for price block %s", *p.Id)
+		}
+
+	}
+
+	items := []*receipts.ReceiptItem{}
+	var currentPrice *textract.Block
+	buffer := strings.Builder{}
+	for itemIdx, item := range itemBlocks {
+		priceBlock := itemDescToPrice[itemIdx]
+		if priceBlock != nil && currentPrice == nil {
+			// possible end of the item
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+			currentPrice = priceBlock
+		} else if priceBlock != nil && priceBlock == currentPrice {
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+		} else if priceBlock != currentPrice {
+
+			// new item
+			newItem, err := createReceiptItem(buffer.String(), currentPrice)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, newItem)
+
+			buffer.Reset()
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+			currentPrice = priceBlock
+		} else if priceBlock == nil {
+			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+		}
+	}
+
+	if currentPrice == nil {
+		return nil, fmt.Errorf("null current price at end of price/line search")
+	}
+
+	lastItem, err := createReceiptItem(strings.TrimSpace(buffer.String()), currentPrice)
+	if err != nil {
+		return nil, err
+	}
+
+	// new item
+	items = append(items, lastItem)
+
+	return items, nil
+}
+
 // ImageReceiptParseConfig - options to configure how the textract response is processed
 type ImageReceiptParseConfig struct {
 	maxItemDescXPos float64
@@ -335,37 +429,10 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 	// within the bounds of the final prices
 	itemBlocks := findItemBlocks(resp, headerBottomRight, summaryTopYPos, config)
 
-	// array index matches itemBlocks idx
-	// array index value matches price blocks idx
-	itemDescToPrice := make([]*textract.Block, len(itemBlocks))
-
-	for _, p := range finalPriceBlocks {
-
-		topLine, bottomLine, err := calculateSlopes(p.Geometry.Polygon)
-		if err != nil {
-			return nil, err
-		}
-
-		possibleItems := findBlocksByLinearSlope(itemBlocks, topLine, bottomLine, config)
-		if len(possibleItems) > 0 {
-			b := []string{}
-
-			for _, possibleItem := range possibleItems {
-
-				for itemIdx, item := range itemBlocks {
-					if item == possibleItem {
-						itemDescToPrice[itemIdx] = p
-					}
-				}
-
-				b = append(b, *possibleItem.Text)
-			}
-		} else {
-			return nil, fmt.Errorf("unable to find item desc for price block %s", *p.Id)
-		}
-
+	items, err := createReceiptItems(itemBlocks, finalPriceBlocks, config)
+	if err != nil {
+		return nil, err
 	}
-
 	retval := receipts.ReceiptDetail{}
 
 	taxParse := priceRegex.FindStringSubmatch(*summary.taxBlock.Text)
@@ -374,56 +441,6 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 		return nil, err
 	}
 	retval.SalesTax = float32(tax)
-	items := []*receipts.ReceiptItem{}
-	var currentPrice *textract.Block
-	buffer := strings.Builder{}
-	for itemIdx, item := range itemBlocks {
-		priceBlock := itemDescToPrice[itemIdx]
-		if priceBlock != nil && currentPrice == nil {
-			// possible end of the item
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
-			currentPrice = priceBlock
-		} else if priceBlock != nil && priceBlock == currentPrice {
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
-		} else if priceBlock != currentPrice {
-
-			res := priceRegex.FindStringSubmatch(*currentPrice.Text)
-
-			totalCost, err := strconv.ParseFloat(res[1], 32)
-			if err != nil {
-				return nil, err
-			}
-
-			// new item
-			items = append(items, &receipts.ReceiptItem{
-				Name:      strings.TrimSpace(buffer.String()),
-				TotalCost: float32(totalCost),
-			})
-
-			buffer.Reset()
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
-			currentPrice = priceBlock
-		} else if priceBlock == nil {
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
-		}
-	}
-
-	if currentPrice == nil {
-		return nil, fmt.Errorf("null current price at end of price/line search")
-	}
-
-	res := priceRegex.FindStringSubmatch(*currentPrice.Text)
-
-	totalCost, err := strconv.ParseFloat(res[1], 32)
-	if err != nil {
-		return nil, err
-	}
-
-	// new item
-	items = append(items, &receipts.ReceiptItem{
-		Name:      strings.TrimSpace(buffer.String()),
-		TotalCost: float32(totalCost),
-	})
 
 	retval.Items = items
 
@@ -443,6 +460,8 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 		// we'll increment it by 0.01.
 		// FIXME: we should use a binary search as opposed to iterative search
 		for tolerance := 0.0; tolerance <= 0.1; tolerance += 0.005 {
+
+			println(fmt.Sprintf("Trying tolerance %v, maxXPos: %v", tolerance, maxXPos))
 			retval, err := processTextractResponse(resp, &ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance})
 			if err != nil {
 				// TODO: if it's the missing data error, we should immediately return
@@ -464,10 +483,10 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 			if actualTotal == int(expectedTotal*100.0) {
 				return retval, nil
 			} else if actualTotal < int(expectedTotal*100) {
-				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal))
+				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal/100.0))
 				continue
 			} else {
-				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal))
+				println(fmt.Sprintf("Expected %v got %v", expectedTotal, actualTotal/100.0))
 				println("went over, so breaking")
 				break
 			}

@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"regexp"
 )
 
@@ -21,8 +22,9 @@ var totalRegex = regexp.MustCompile(`(?i)total|balance`)
 var dateRegex = regexp.MustCompile(`(\d{2}/\d{2}/\d{2,4}|\d{1,2}[A-Z]{3}\d{4})`)
 var timeRegex = regexp.MustCompile(`\d{1,2}:\d{2}:\d{2}`)
 
-var priceRegexStr = `(-?\d{0,5}\.\d{2})`
+var priceRegexStr = `(\d{0,5}\.\d{2})`
 var priceRegex = regexp.MustCompile(priceRegexStr)
+var discountRegex = regexp.MustCompile(fmt.Sprintf("-%s|%s-", priceRegexStr, priceRegexStr))
 
 var weightRegexStr = `(?i)(\d{1,3}\.\d{2}) (lb|1b|oz)`
 var weightRegex = regexp.MustCompile(weightRegexStr)
