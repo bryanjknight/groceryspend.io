@@ -19,7 +19,16 @@ var taxRegex = regexp.MustCompile(`(?i)(total )?tax`)
 var subtotalRegex = regexp.MustCompile(`(?i)subtotal`)
 var totalRegex = regexp.MustCompile(`(?i)total|balance`)
 
+// note: when adding regex expressions, add a corresponding
+// 			 date format
 var dateRegex = regexp.MustCompile(`(\d{2}/\d{2}/\d{2,4}|\d{1,2}[A-Z]{3}\d{4})`)
+
+// note: golang wants all timestamp formats to equal Mon Jan 2 15:04:05 MST 2006
+var dateFormats = []string{
+	"01/02/06",
+	"01/02/2006",
+	"02JAN2006",
+}
 var timeRegex = regexp.MustCompile(`\d{1,2}:\d{2}:\d{2}`)
 
 var priceRegexStr = `(\d{0,5}\.\d{2})`

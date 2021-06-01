@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/textract"
 	"github.com/montanaflynn/stats"
@@ -438,6 +439,38 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 		return nil, err
 	}
 	retval := receipts.ReceiptDetail{}
+
+	// get order date
+	// TODO: scanning through all the blocks again, perhaps more logically
+	//			 having data structured
+	var orderDate *time.Time
+	for _, block := range resp.Blocks {
+		if *block.BlockType == textract.BlockTypeLine && dateRegex.MatchString(*block.Text) {
+
+			// FIXME: we assume EST, should deduce timezone based on zip code
+			loc, _ := time.LoadLocation("America/New_York")
+
+			res := dateRegex.FindStringSubmatch(*block.Text)
+			orderDateStr := res[1]
+			for _, dateFormat := range dateFormats {
+				orderDateTmp, err := time.ParseInLocation(dateFormat, orderDateStr, loc)
+				if err != nil {
+					continue
+				}
+				orderDate = &orderDateTmp
+				break
+			}
+
+			if orderDate == nil {
+				// warn we failed to parse the order date
+				println(fmt.Sprintf("Failed to parse %s as a date time", orderDateStr))
+			}
+		}
+	}
+
+	if orderDate != nil {
+		retval.OrderTimestamp = *orderDate
+	}
 
 	taxParse := priceRegex.FindStringSubmatch(*summary.taxBlock.Text)
 	tax, err := strconv.ParseFloat(taxParse[1], 32)
