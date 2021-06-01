@@ -138,6 +138,7 @@ func (m *Auth0JwtAuthMiddleware) VerifySession() gin.HandlerFunc {
 			c.Abort()
 			c.Writer.WriteHeader(http.StatusUnauthorized)
 			c.Writer.Write([]byte("Unauthorized"))
+			return
 		}
 
 		// if it's a preflight check, don't try to verify the session since the
