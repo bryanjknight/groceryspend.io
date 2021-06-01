@@ -54,6 +54,26 @@ export class ReceiptItem {
 	    return a;
 	}
 }
+export class ShoppingService {
+    Name: string;
+
+    constructor(source: any = {}) {
+        if ('string' === typeof source) source = JSON.parse(source);
+        this.Name = source["Name"];
+    }
+}
+export class RetailStore {
+    Name: string;
+    Address: string;
+    PhoneNumber: string;
+
+    constructor(source: any = {}) {
+        if ('string' === typeof source) source = JSON.parse(source);
+        this.Name = source["Name"];
+        this.Address = source["Address"];
+        this.PhoneNumber = source["PhoneNumber"];
+    }
+}
 export class ReceiptDetail {
     ID: string;
     OriginalURL: string;
@@ -65,8 +85,11 @@ export class ReceiptDetail {
     Tip: number;
     ServiceFee: number;
     DeliveryFee: number;
+    OtherFees: number;
     Discounts: number;
     SubtotalCost: number;
+    RetailStore?: RetailStore;
+    ShoppingService?: ShoppingService;
 
     constructor(source: any = {}) {
         if ('string' === typeof source) source = JSON.parse(source);
@@ -80,8 +103,11 @@ export class ReceiptDetail {
         this.Tip = source["Tip"];
         this.ServiceFee = source["ServiceFee"];
         this.DeliveryFee = source["DeliveryFee"];
+        this.OtherFees = source["OtherFees"];
         this.Discounts = source["Discounts"];
         this.SubtotalCost = source["SubtotalCost"];
+        this.RetailStore = this.convertValues(source["RetailStore"], RetailStore);
+        this.ShoppingService = this.convertValues(source["ShoppingService"], ShoppingService);
     }
 
 	convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -109,6 +135,8 @@ export class ReceiptSummary {
     RequestTimestamp: Date;
     OrderTimestamp: Date;
     TotalCost: number;
+    RetailStoreName: string;
+    ShoppingServiceName: string;
 
     constructor(source: any = {}) {
         if ('string' === typeof source) source = JSON.parse(source);
@@ -118,6 +146,8 @@ export class ReceiptSummary {
         this.RequestTimestamp = new Date(source["RequestTimestamp"]);
         this.OrderTimestamp = new Date(source["OrderTimestamp"]);
         this.TotalCost = source["TotalCost"];
+        this.RetailStoreName = source["RetailStoreName"];
+        this.ShoppingServiceName = source["ShoppingServiceName"];
     }
 }
 export class ParseReceiptRequest {
@@ -126,6 +156,8 @@ export class ParseReceiptRequest {
     timestamp: Date;
     data: string;
     userId?: string;
+    parseStatus?: number;
+    parseType: number;
 
     constructor(source: any = {}) {
         if ('string' === typeof source) source = JSON.parse(source);
@@ -134,6 +166,8 @@ export class ParseReceiptRequest {
         this.timestamp = new Date(source["timestamp"]);
         this.data = source["data"];
         this.userId = source["userId"];
+        this.parseStatus = source["parseStatus"];
+        this.parseType = source["parseType"];
     }
 }
 export class AggregatedCategory {

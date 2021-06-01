@@ -139,12 +139,19 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 			return
 		}
 
+		parseStatus := req.ParseStatus
+		if parseStatus == 0 {
+			parseStatus = Submitted
+		}
+
 		// submit request to be parsed
 		receiptRequest := ParseReceiptRequest{}
 		receiptRequest.Data = req.Data
 		receiptRequest.Timestamp = time.Now()
 		receiptRequest.URL = req.URL
 		receiptRequest.UserID = userID
+		receiptRequest.ParseStatus = parseStatus
+		receiptRequest.ParseType = req.ParseType
 
 		err := repo.SaveReceiptRequest(&receiptRequest)
 		if err != nil {

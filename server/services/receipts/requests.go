@@ -43,10 +43,14 @@ func ProcessReceiptRequests(workerName string) {
 			err = HandleReceiptRequest(receiptRequest, repo, categorizeClient)
 			if err != nil {
 				log.Printf("Failed to handle receipt request: %s", err)
+				receiptRequest.ParseStatus = Error
+				repo.PatchReceiptRequest(&receiptRequest)
 				// TODO: Move to DLQ, don't return
 				return
 			}
 
+			receiptRequest.ParseStatus = Completed
+			repo.PatchReceiptRequest(&receiptRequest)
 			log.Printf("Done")
 			d.Ack(false)
 		}
