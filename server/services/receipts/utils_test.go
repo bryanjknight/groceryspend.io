@@ -10,6 +10,5 @@ func getTestDataDir() string {
 	return filepath.Join(
 		filepath.Dir(
 			filepath.Dir(
-				filepath.Dir(
-					filepath.Dir(filename)))), "test", "data")
+				filepath.Dir(filename))), "test", "data")
 }
