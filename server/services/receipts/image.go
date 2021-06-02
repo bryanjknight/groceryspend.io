@@ -1,4 +1,4 @@
-package parser
+package receipts
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/textract"
 	"github.com/montanaflynn/stats"
-	"groceryspend.io/server/services/receipts"
 	"groceryspend.io/server/utils"
 )
 
@@ -91,7 +90,7 @@ func findPriceViaLinearRegression(block *textract.Block, candidateBlocks []*text
 	return nil, fmt.Errorf("failed to find price using block id: %s", *block.Id)
 }
 
-func findSummarySection(resp *textract.AnalyzeDocumentOutput, config *ImageReceiptParseConfig) (*summarySection, error) {
+func findSummarySection(resp *textract.DetectDocumentTextOutput, config *ImageReceiptParseConfig) (*summarySection, error) {
 	// typically the format is <subtotal | tax | total> (whitespace) <total value>
 	// so, we will look for the the words, then verify the current line or next line is the
 	// actual value
@@ -127,7 +126,7 @@ func findSummarySection(resp *textract.AnalyzeDocumentOutput, config *ImageRecei
 }
 
 // we assume the header always starts at 0,0
-func findHeaderRegion(resp *textract.AnalyzeDocumentOutput) *textract.Point {
+func findHeaderRegion(resp *textract.DetectDocumentTextOutput) *textract.Point {
 
 	headerBottomRight := textract.Point{
 		X: new(float64), Y: new(float64),
@@ -173,7 +172,7 @@ func findHeaderRegion(resp *textract.AnalyzeDocumentOutput) *textract.Point {
 }
 
 func findItemFinalPrices(
-	resp *textract.AnalyzeDocumentOutput,
+	resp *textract.DetectDocumentTextOutput,
 	minYPos float64,
 	maxYPos float64,
 	tolerance float64) ([]*textract.Block, error) {
@@ -246,7 +245,7 @@ func calculateSlopes(polygon []*textract.Point) (*linearRegression, *linearRegre
 }
 
 func findItemBlocks(
-	resp *textract.AnalyzeDocumentOutput,
+	resp *textract.DetectDocumentTextOutput,
 	headerBottomRight *textract.Point,
 	summaryTopYPos float64,
 	config *ImageReceiptParseConfig) []*textract.Block {
@@ -282,7 +281,7 @@ func findItemBlocks(
 	return itemBlocks
 }
 
-func createReceiptItem(itemText string, priceBlock *textract.Block) (*receipts.ReceiptItem, error) {
+func createReceiptItem(itemText string, priceBlock *textract.Block) (*ReceiptItem, error) {
 	var res []string
 	res = priceRegex.FindStringSubmatch(*priceBlock.Text)
 	isDiscount := discountRegex.MatchString(*priceBlock.Text)
@@ -295,14 +294,14 @@ func createReceiptItem(itemText string, priceBlock *textract.Block) (*receipts.R
 		totalCost = -totalCost
 	}
 
-	return &receipts.ReceiptItem{
+	return &ReceiptItem{
 		Name:      strings.TrimSpace(itemText),
 		TotalCost: float32(totalCost),
 	}, nil
 
 }
 
-func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textract.Block, config *ImageReceiptParseConfig) ([]*receipts.ReceiptItem, error) {
+func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textract.Block, config *ImageReceiptParseConfig) ([]*ReceiptItem, error) {
 
 	itemDescToPrice := make([]*textract.Block, len(itemBlocks))
 
@@ -335,7 +334,7 @@ func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textra
 
 	}
 
-	items := []*receipts.ReceiptItem{}
+	items := []*ReceiptItem{}
 	var currentPrice *textract.Block
 	buffer := strings.Builder{}
 	for itemIdx, item := range itemBlocks {
@@ -382,10 +381,11 @@ func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textra
 type ImageReceiptParseConfig struct {
 	maxItemDescXPos float64
 	tolerance       float64
+	confidence      float64
 }
 
 // Given a configuration, try to parse out the details
-func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *ImageReceiptParseConfig) (*receipts.ReceiptDetail, error) {
+func processTextractResponse(resp *textract.DetectDocumentTextOutput, config *ImageReceiptParseConfig) (*ReceiptDetail, error) {
 	// Note: X goes from left to right, Y goes from top to bottom. Therefore
 	//       (0,0) is the top left, (N, 0) is the top right, (0,M) is the bottom left,
 	// 			 and (N, M) is bottom right
@@ -438,14 +438,14 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 	if err != nil {
 		return nil, err
 	}
-	retval := receipts.ReceiptDetail{}
+	retval := ReceiptDetail{}
 
 	// get order date
 	// TODO: scanning through all the blocks again, perhaps more logically
 	//			 having data structured
 	var orderDate *time.Time
 	for _, block := range resp.Blocks {
-		if *block.BlockType == textract.BlockTypeLine && dateRegex.MatchString(*block.Text) {
+		if *block.BlockType == textract.BlockTypeLine && dateRegex.MatchString(*block.Text) && *block.Confidence >= config.confidence {
 
 			// FIXME: we assume EST, should deduce timezone based on zip code
 			loc, _ := time.LoadLocation("America/New_York")
@@ -463,7 +463,7 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 
 			if orderDate == nil {
 				// warn we failed to parse the order date
-				println(fmt.Sprintf("Failed to parse %s as a date time", orderDateStr))
+				println(fmt.Sprintf("Failed to parse %s as a date time: %v, %v", orderDateStr, *block.Confidence, config.confidence))
 			}
 		}
 	}
@@ -486,7 +486,7 @@ func processTextractResponse(resp *textract.AnalyzeDocumentOutput, config *Image
 }
 
 // ParseImageReceipt - Try multiple combinations of tolerances to get the right final value
-func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float32) (*receipts.ReceiptDetail, error) {
+func ParseImageReceipt(resp *textract.DetectDocumentTextOutput, expectedTotal float32, confidence float64) (*ReceiptDetail, error) {
 
 	// we will slowly increase the the tolerance until we either match the expected total
 	// if we're too low, we'll increase the tolerance. If we go over, then we're letting too much
@@ -499,7 +499,8 @@ func ParseImageReceipt(resp *textract.AnalyzeDocumentOutput, expectedTotal float
 		for tolerance := 0.0; tolerance <= 0.5; tolerance += 0.001 {
 
 			// println(fmt.Sprintf("Trying tolerance %v, maxXPos: %v", tolerance, maxXPos))
-			retval, err := processTextractResponse(resp, &ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance})
+			retval, err := processTextractResponse(resp,
+				&ImageReceiptParseConfig{maxItemDescXPos: maxXPos, tolerance: tolerance, confidence: confidence})
 			if err != nil {
 				// TODO: if it's the missing data error, we should immediately return
 				//       to avoid running it multiple time

@@ -1,4 +1,4 @@
-package parser
+package receipts
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/textract"
+	"groceryspend.io/server/utils"
 )
 
 func TestTextractResponse(t *testing.T) {
@@ -28,6 +29,8 @@ func TestTextractResponse(t *testing.T) {
 		}
 		return t
 	}
+
+	confidence := .9
 
 	tests := []test{
 		{
@@ -54,15 +57,15 @@ func TestTextractResponse(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.file, func(t *testing.T) {
-			var response textract.AnalyzeDocumentOutput
-			fileText := readFileAsString(testInstance.file)
+			var response textract.DetectDocumentTextOutput
+			fileText := utils.ReadFileAsString(testInstance.file)
 			reader := strings.NewReader(fileText)
 			err := json.NewDecoder(reader).Decode(&response)
 			if err != nil {
 				println(err.Error())
 			}
 
-			receiptDetail, err := ParseImageReceipt(&response, testInstance.expectedTotal)
+			receiptDetail, err := ParseImageReceipt(&response, testInstance.expectedTotal, confidence)
 			if err != nil {
 				t.Errorf("error while processing %s: %s", testInstance.file, err.Error())
 			} else if receiptDetail == nil {

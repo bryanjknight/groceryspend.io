@@ -23,6 +23,14 @@ export function Nav(): JSX.Element {
             Home
           </Link>
           <Link
+            to="/requests"
+            className={`nav-item nav-link${
+              pathname === '/requests' ? ' active' : ''
+            }`}
+          >
+            Create Request
+          </Link>          
+          <Link
             to="/receipts"
             className={`nav-item nav-link${
               pathname === '/receipts' ? ' active' : ''

@@ -1,4 +1,4 @@
-package parser
+package receipts
 
 import (
 	"fmt"

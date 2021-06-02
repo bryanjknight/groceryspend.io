@@ -152,12 +152,13 @@ export class ReceiptSummary {
 }
 export class ParseReceiptRequest {
     id?: string;
-    url: string;
+    url?: string;
     timestamp: Date;
     data: string;
     userId?: string;
     parseStatus?: number;
     parseType: number;
+    expectedTotal?: number;
 
     constructor(source: any = {}) {
         if ('string' === typeof source) source = JSON.parse(source);
@@ -168,6 +169,7 @@ export class ParseReceiptRequest {
         this.userId = source["userId"];
         this.parseStatus = source["parseStatus"];
         this.parseType = source["parseType"];
+        this.expectedTotal = source["expectedTotal"];
     }
 }
 export class AggregatedCategory {

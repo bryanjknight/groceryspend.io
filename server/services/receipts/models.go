@@ -50,13 +50,14 @@ func (d ParseStatus) EnumIndex() int {
 // ParseReceiptRequest is an external rqeuest to parse a receipt
 type ParseReceiptRequest struct {
 	ID             uuid.UUID `json:"id,omitempty"`
-	URL            string    `json:"url"`
+	URL            string    `json:"url,omitempty"`
 	Timestamp      time.Time `json:"timestamp"`
 	Data           string    `json:"data"`
 	UserID         uuid.UUID `json:"userId,omitempty"`
 	ReceiptSummary *ReceiptSummary
 	ParseStatus    ParseStatus `json:"parseStatus,omitempty"`
 	ParseType      ParseType   `json:"parseType"`
+	ExpectedTotal  float32     `json:"expectedTotal,omitempty"`
 }
 
 // ReceiptSummary is a summary of a receipt that has been processed

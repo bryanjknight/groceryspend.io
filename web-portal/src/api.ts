@@ -5,6 +5,7 @@ import {
   Category,
   ReceiptItem,
   PatchReceiptItem,
+  ParseReceiptRequest,
 } from "./models";
 import axios from "axios";
 
@@ -113,6 +114,27 @@ export const patchItemCategory = (
       data: {
         CategoryID: newCategory.ID,
       } as PatchReceiptItem,
+    })
+    .then((resp) =>
+      resp.status
+        ? Promise.resolve()
+        : Promise.reject(new Error(resp.statusText))
+    );
+};
+
+export const createReceiptRequest = (
+  req: ParseReceiptRequest
+) => (bearerToken: string): Promise<void> => {
+  return axios
+    .request({
+      method: "POST",
+      baseURL: BASE_URL,
+      url: `/receipts/receipt`,
+      headers: {
+        ...DEFAULT_AXIOS_HEADERS,
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      data: req,
     })
     .then((resp) =>
       resp.status

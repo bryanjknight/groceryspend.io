@@ -120,6 +120,7 @@ func handleReceiptDetail(repo ReceiptRepository) gin.HandlerFunc {
 	return fn
 }
 
+// TODO: break this out into a different router (e.g. /requests/)
 func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Client) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
@@ -146,6 +147,9 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 
 		// submit request to be parsed
 		receiptRequest := ParseReceiptRequest{}
+
+		// TODO: upload to file service (e.g. local file system, s3, etc)
+		//       for now, we'll store the actual data in the db
 		receiptRequest.Data = req.Data
 		receiptRequest.Timestamp = time.Now()
 		receiptRequest.URL = req.URL
