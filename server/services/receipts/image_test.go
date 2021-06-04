@@ -76,11 +76,11 @@ func TestTextractResponse(t *testing.T) {
 			expectedTotal:     34.05,
 			expectedOrderDate: mustParseTime("01/02/2006", "04/03/2021"),
 		},
-		// {
-		// 	file:              filepath.Join(getTestDataDir(), "hannaford", "receipt1-apiResponse.json"),
-		// 	expectedTotal:     29.92,
-		// 	expectedOrderDate: mustParseTime("01/02/2006", "04/06/2021"),
-		// },
+		{
+			file:              filepath.Join(getTestDataDir(), "hannaford", "receipt1-apiResponse.json"),
+			expectedTotal:     29.92,
+			expectedOrderDate: mustParseTime("01/02/2006", "04/06/2021"),
+		},
 		// {
 		// 	file:              filepath.Join(getTestDataDir(), "wegmans", "receipt1-apiResponse.json"),
 		// 	expectedTotal:     64.01,

@@ -399,10 +399,11 @@ func findLineItemAndPriceRegions(
 		if utils.IsGreaterThanWithinTolerance(regressionXValue.Y, *centroid.X, config.regressionTolerance) {
 			priceBlocks = append(priceBlocks, block)
 		} else {
-			// FIXME: re-adding the unit prices seems to break everything, requires further investigation
-			// lineItemBlocks = append(lineItemBlocks, block)
+			lineItemBlocks = append(lineItemBlocks, block)
 		}
 	}
+
+	lineItemBlocks = sortBlocksByLogicalOrder(resp, lineItemBlocks)
 
 	lineItemRegion := &ReceiptImageSection{
 		blocks:  lineItemBlocks,
@@ -465,78 +466,89 @@ func createReceiptItem(itemText string, priceBlock *textract.Block) (*ReceiptIte
 
 }
 
+// sort all blocks by their top left point. the goal should be that all blocks
+// are ordered from left to right and top to bottom
+func sortBlocksByLogicalOrder(resp *textract.DetectDocumentTextOutput, blocks []*textract.Block) []*textract.Block {
+
+	// v1 - just re-apply the ordering the response had already
+	pageFilter := func(block *textract.Block) bool {
+		return *block.BlockType == textract.BlockTypePage
+	}
+
+	// assuming there's one and only one page
+	page := filterBlocks(resp.Blocks, pageFilter)[0]
+
+	// assuming only one relationship
+	childrenIds := page.Relationships[0].Ids
+
+	newList := []*textract.Block{}
+
+	blockIDToBlock := make(map[string]*textract.Block)
+	for _, block := range blocks {
+		blockIDToBlock[*block.Id] = block
+	}
+
+	for _, childID := range childrenIds {
+
+		if val, ok := blockIDToBlock[*childID]; ok {
+			newList = append(newList, val)
+		}
+	}
+
+	return newList
+
+}
+
 func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textract.Block, config *ImageReceiptParseConfig) ([]*ReceiptItem, error) {
 
-	itemDescToPrice := make([]*textract.Block, len(itemBlocks))
+	items := []*ReceiptItem{}
+	var prevLine *linearRegression
+	for _, priceBlock := range finalPriceBlocks {
 
-	for _, p := range finalPriceBlocks {
-
-		topLine, bottomLine, err := calculateSlopes(p.Geometry.Polygon)
+		_, bottomLine, err := calculateSlopes(priceBlock.Geometry.Polygon)
 		if err != nil {
 			return nil, err
 		}
 
-		possibleItems := findBlocksByLinearSlope(itemBlocks, topLine, bottomLine, config)
+		var filter BlockFilter
+
+		if prevLine == nil {
+			filter = aboveLinearRegressionLine(bottomLine, config, true)
+		} else {
+			filter = func(block *textract.Block) bool {
+				return aboveLinearRegressionLine(bottomLine, config, true)(block) &&
+					belowLinearRegressionLine(prevLine, config, false)(block)
+			}
+		}
+
+		possibleItems := filterBlocks(itemBlocks, filter)
+
 		if len(possibleItems) > 0 {
 			b := []string{}
 
 			for _, possibleItem := range possibleItems {
-
-				// go back through the possible item blocks
-				// and tie them to the probable price
-				for itemIdx, item := range itemBlocks {
-					if item == possibleItem {
-						itemDescToPrice[itemIdx] = p
-					}
-				}
-
+				// /add it to the string
 				b = append(b, *possibleItem.Text)
+
 			}
-		} else {
-			return nil, fmt.Errorf("unable to find item desc for price block %s", *p.Id)
-		}
 
-	}
-
-	items := []*ReceiptItem{}
-	var currentPrice *textract.Block
-	buffer := strings.Builder{}
-	for itemIdx, item := range itemBlocks {
-		priceBlock := itemDescToPrice[itemIdx]
-		if priceBlock != nil && currentPrice == nil {
-			// possible end of the item
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
-			currentPrice = priceBlock
-		} else if priceBlock != nil && priceBlock == currentPrice {
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
-		} else if priceBlock != currentPrice {
-
-			// new item
-			newItem, err := createReceiptItem(buffer.String(), currentPrice)
+			parsedPrice, err := ParsePrice(*priceBlock.Text)
+			if discountRegex.MatchString(*priceBlock.Text) {
+				parsedPrice = -parsedPrice
+			}
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s is not a parsable price", *priceBlock.Text)
 			}
-			items = append(items, newItem)
-
-			buffer.Reset()
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
-			currentPrice = priceBlock
-		} else if priceBlock == nil {
-			buffer.WriteString(fmt.Sprintf("%s ", *item.Text))
+			item := &ReceiptItem{
+				TotalCost: parsedPrice,
+				Name:      strings.Join(b, " "),
+			}
+			items = append(items, item)
+		} else {
+			return nil, fmt.Errorf("unable to find item desc for price block %s", *priceBlock.Id)
 		}
-	}
 
-	if currentPrice == nil {
-		return nil, fmt.Errorf("null current price at end of price/line search")
 	}
-
-	lastItem, err := createReceiptItem(buffer.String(), currentPrice)
-	if err != nil {
-		return nil, err
-	}
-
-	// new item
-	items = append(items, lastItem)
 
 	return items, nil
 }
@@ -614,10 +626,10 @@ func ParseImageReceipt(resp *textract.DetectDocumentTextOutput, expectedTotal fl
 	// receipts will have blocks on the edge of the header/summary and the line items/price. This set is to allow
 	// us to try different combinations, depending on the receipt
 	includeBlocksOnIntersectionToHeaderSummary := [][]bool{
-		{true, true},
-		{false, false},
+		// {true, true},
+		// {false, false},
 		{true, false},
-		{false, true},
+		// {false, true},
 	}
 
 	for _, includeIntersectionOptions := range includeBlocksOnIntersectionToHeaderSummary {
