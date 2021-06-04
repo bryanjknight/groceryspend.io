@@ -3,6 +3,7 @@ package receipts
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 )
 
 // collection of regexes
@@ -37,3 +38,18 @@ var discountRegex = regexp.MustCompile(fmt.Sprintf("-%s|%s-", priceRegexStr, pri
 
 var weightRegexStr = `(?i)(\d{1,3}\.\d{2}) (lb|1b|oz)`
 var weightRegex = regexp.MustCompile(weightRegexStr)
+
+// ParsePrice given a string, parse out the value
+func ParsePrice(s string) (float32, error) {
+	res := priceRegex.FindStringSubmatch(s)
+	if len(res) < 1 {
+		return 0.0, fmt.Errorf("did not match on %s", s)
+	}
+
+	val, err := strconv.ParseFloat(res[1], 32)
+	if err != nil {
+		return 0.0, err
+	}
+
+	return float32(val), nil
+}
