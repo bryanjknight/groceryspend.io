@@ -7,9 +7,47 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/textract"
 	"groceryspend.io/server/utils"
 )
+
+func TestIntersect(t *testing.T) {
+
+	testBlock := &textract.Block{
+		Geometry: &textract.Geometry{
+			BoundingBox: &textract.BoundingBox{},
+			Polygon:     []*textract.Point{{X: aws.Float64(0.6366869807243347), Y: aws.Float64(0.16261744499206543)}, {X: aws.Float64(0.679876446723938), Y: aws.Float64(0.16301347315311432)}, {X: aws.Float64(0.6794444918632507), Y: aws.Float64(0.17910079658031464)}, {X: aws.Float64(0.636359691619873), Y: aws.Float64(0.17870093882083893)}},
+		},
+		BlockType:  aws.String(textract.BlockTypeLine),
+		Text:       aws.String("9.99"),
+		Confidence: aws.Float64(99.999),
+	}
+
+	headerLr := &linearRegression{
+		slope:        0.008918718940121978,
+		intersection: 0.12054234549731022,
+	}
+
+	summaryLr := &linearRegression{
+		slope:        0.01054189482192841,
+		intersection: 0.35500219741221267,
+	}
+
+	config := &ImageReceiptParseConfig{
+		ocrConfidence:                 90.0,
+		regressionTolerance:           0.0,
+		blocksOnHeaderLineAreHeader:   true,
+		blocksOnSummaryLineAreSummary: true,
+	}
+
+	belowHeader := belowLinearRegressionLine(headerLr, config, !config.blocksOnHeaderLineAreHeader)(testBlock)
+	aboveSummary := aboveLinearRegressionLine(summaryLr, config, !config.blocksOnSummaryLineAreSummary)(testBlock)
+
+	if !belowHeader || !aboveSummary {
+		t.Errorf("Block should be between lines but was calculated to not be: %t, %t", belowHeader, aboveSummary)
+	}
+}
 
 func TestTextractResponse(t *testing.T) {
 
@@ -30,7 +68,7 @@ func TestTextractResponse(t *testing.T) {
 		return t
 	}
 
-	confidence := 90.0
+	confidence := 80.0
 
 	tests := []test{
 		{

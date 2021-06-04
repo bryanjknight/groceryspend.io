@@ -95,7 +95,7 @@ type BlockFilter func(block *textract.Block) bool
 // always filter by line and confidence
 func defaultBlockFilter(config *ImageReceiptParseConfig) BlockFilter {
 	return func(block *textract.Block) bool {
-		return *block.BlockType == textract.BlockTypeLine && *block.Confidence >= config.confidence
+		return *block.BlockType == textract.BlockTypeLine && *block.Confidence >= config.ocrConfidence
 	}
 }
 
@@ -103,27 +103,30 @@ func calculateExpectedY(x float64, lr *linearRegression) float64 {
 	return x*lr.slope + lr.intersection
 }
 
-func aboveLinearRegressionLine(lr *linearRegression, config *ImageReceiptParseConfig) BlockFilter {
+func aboveLinearRegressionLine(lr *linearRegression, config *ImageReceiptParseConfig, includeIntersection bool) BlockFilter {
 	return func(block *textract.Block) bool {
 		// if either bottom left or bottom right are above the line, then we're good
 		orderedPolygons := OrderedPolygonPoints(block.Geometry.Polygon)
 		bottomLeft := orderedPolygons[3]
 		bottomRight := orderedPolygons[2]
+
 		return defaultBlockFilter(config)(block) &&
-			(*bottomLeft.Y <= calculateExpectedY(*bottomLeft.X, lr) ||
-				*bottomRight.Y <= calculateExpectedY(*bottomRight.X, lr) ||
-				LinePassesThroughPolygon(lr, orderedPolygons))
+			((*bottomLeft.Y < calculateExpectedY(*bottomLeft.X, lr) ||
+				*bottomRight.Y < calculateExpectedY(*bottomRight.X, lr)) ||
+				(includeIntersection && LinePassesThroughPolygon(lr, block.Geometry.Polygon)))
 	}
 }
 
-func belowLinearRegressionLine(lr *linearRegression, config *ImageReceiptParseConfig) BlockFilter {
+func belowLinearRegressionLine(lr *linearRegression, config *ImageReceiptParseConfig, includeIntersection bool) BlockFilter {
 	return func(block *textract.Block) bool {
 		// if either top left or top right are below the line, then we're good
 		orderedPolygons := OrderedPolygonPoints(block.Geometry.Polygon)
 		topLeft := orderedPolygons[0]
 		topRight := orderedPolygons[1]
-		return defaultBlockFilter(config)(block) && (*topLeft.Y >= calculateExpectedY(*topLeft.X, lr) ||
-			*topRight.Y >= calculateExpectedY(*topRight.X, lr))
+		return defaultBlockFilter(config)(block) &&
+			((*topLeft.Y > calculateExpectedY(*topLeft.X, lr) ||
+				*topRight.Y > calculateExpectedY(*topRight.X, lr)) ||
+				(includeIntersection && LinePassesThroughPolygon(lr, block.Geometry.Polygon)))
 	}
 }
 
@@ -254,8 +257,13 @@ func findSummaryRegion(resp *textract.DetectDocumentTextOutput, config *ImageRec
 	// determine the bottom line for the header
 	topLineRegression, _, _ := calculateSlopes(summaryDetailPolygon)
 
-	// find all blocks above the bottom line regression
-	blocks := filterBlocks(resp.Blocks, belowLinearRegressionLine(topLineRegression, config))
+	println(fmt.Sprintf("Summary line %v slope, %v intercept", topLineRegression.slope, topLineRegression.intersection))
+
+	// find all blocks below the top line regression (include items that cross it)
+	filter := func(block *textract.Block) bool {
+		return belowLinearRegressionLine(topLineRegression, config, config.blocksOnSummaryLineAreSummary)(block)
+	}
+	blocks := filterBlocks(resp.Blocks, filter)
 
 	return &ReceiptImageSection{
 		blocks:  blocks,
@@ -316,8 +324,13 @@ func findHeaderRegion(
 	// determine the bottom line for the header
 	_, bottomLineRegression, _ := calculateSlopes(headerDetailsPolygon)
 
-	// find all blocks above the bottom line regression
-	blocks := filterBlocks(resp.Blocks, aboveLinearRegressionLine(bottomLineRegression, config))
+	println(fmt.Sprintf("Header line %v slope, %v intercept", bottomLineRegression.slope, bottomLineRegression.intersection))
+
+	// find all blocks above the bottom line regression (include items that cross it)
+	filter := func(block *textract.Block) bool {
+		return aboveLinearRegressionLine(bottomLineRegression, config, config.blocksOnHeaderLineAreHeader)(block)
+	}
+	blocks := filterBlocks(resp.Blocks, filter)
 	retval.blocks = blocks
 	retval.polygon = PolygonFromBlocks(blocks)
 	return &retval, bottomLineRegression
@@ -332,7 +345,8 @@ func findLineItemAndPriceRegions(
 
 	// line items and prices should be between the header and summary
 	filter := func(block *textract.Block) bool {
-		return aboveLinearRegressionLine(summaryLine, config)(block) && belowLinearRegressionLine(headerLine, config)(block)
+		return aboveLinearRegressionLine(summaryLine, config, !config.blocksOnSummaryLineAreSummary)(block) &&
+			belowLinearRegressionLine(headerLine, config, !config.blocksOnHeaderLineAreHeader)(block)
 	}
 
 	lineItemAndPriceBlocks := filterBlocks(resp.Blocks, filter)
@@ -345,7 +359,7 @@ func findLineItemAndPriceRegions(
 	for _, block := range lineItemAndPriceBlocks {
 		if priceRegex.MatchString(*block.Text) {
 			possiblePriceBlocks = append(possiblePriceBlocks, block)
-		} else {
+		} else if !departmentNamesRegex.MatchString(*block.Text) {
 			lineItemBlocks = append(lineItemBlocks, block)
 		}
 	}
@@ -382,9 +396,10 @@ func findLineItemAndPriceRegions(
 		blockID := blockIds[itr]
 		block := blockIDToBlock[blockID]
 		// REMEMBER: the regression output is the x axis
-		if utils.IsGreaterThanWithinTolerance(regressionXValue.Y, *centroid.X, config.tolerance) {
+		if utils.IsGreaterThanWithinTolerance(regressionXValue.Y, *centroid.X, config.regressionTolerance) {
 			priceBlocks = append(priceBlocks, block)
 		} else {
+			// FIXME: re-adding the unit prices seems to break everything, requires further investigation
 			// lineItemBlocks = append(lineItemBlocks, block)
 		}
 	}
@@ -528,8 +543,14 @@ func createReceiptItems(itemBlocks []*textract.Block, finalPriceBlocks []*textra
 
 // ImageReceiptParseConfig - options to configure how the textract response is processed
 type ImageReceiptParseConfig struct {
-	tolerance  float64
-	confidence float64
+	// how far off the regression line will we consider a block
+	regressionTolerance float64
+	// the confidence of AWS on the text
+	ocrConfidence float64
+	// whether to include items on the header line to the header (vs line item)
+	blocksOnHeaderLineAreHeader bool
+	// whether to include items on the summary line to the summary (vs the line item section)
+	blocksOnSummaryLineAreSummary bool
 }
 
 // NewReceiptDetailFromReceiptImage creates a receipt detail from a receipt image
@@ -548,12 +569,12 @@ func NewReceiptDetailFromReceiptImage(ri *ReceiptImage, config *ImageReceiptPars
 
 	// check the header and summary section for a timestamp
 	candidateBlocks := []*textract.Block{}
-	candidateBlocks = append(candidateBlocks, *&ri.HeaderSection.blocks...)
-	candidateBlocks = append(candidateBlocks, *&ri.SummarySection.blocks...)
+	candidateBlocks = append(candidateBlocks, ri.HeaderSection.blocks...)
+	candidateBlocks = append(candidateBlocks, ri.SummarySection.blocks...)
 	for _, block := range candidateBlocks {
 		if dateRegex.MatchString(*block.Text) {
 
-			// FIXME: we assume EST, should deduce timezone based on zip code
+			// FIXME: we assume EST, should be passed in as a configuration option
 			loc, _ := time.LoadLocation("America/New_York")
 
 			res := dateRegex.FindStringSubmatch(*block.Text)
@@ -569,13 +590,15 @@ func NewReceiptDetailFromReceiptImage(ri *ReceiptImage, config *ImageReceiptPars
 
 			if orderDate == nil {
 				// warn we failed to parse the order date
-				println(fmt.Sprintf("Failed to parse %s as a date time: %v, %v", orderDateStr, *block.Confidence, config.confidence))
+				println(fmt.Sprintf("Failed to parse %s as a date time: %v, %v", orderDateStr, *block.Confidence, config.ocrConfidence))
 			}
 		}
 	}
 
 	if orderDate != nil {
 		retval.OrderTimestamp = *orderDate
+	} else {
+		return nil, fmt.Errorf("failed to find an order timestamp")
 	}
 
 	populateSummary(&retval, ri, config)
@@ -588,26 +611,30 @@ func NewReceiptDetailFromReceiptImage(ri *ReceiptImage, config *ImageReceiptPars
 // ParseImageReceipt - Try multiple combinations of tolerances to get the right final value
 func ParseImageReceipt(resp *textract.DetectDocumentTextOutput, expectedTotal float32, confidence float64) (*ReceiptDetail, error) {
 
-	// we will slowly increase the the tolerance until we either match the expected total
-	// if we're too low, we'll increase the tolerance. If we go over, then we're letting too much
-	// match in the price->item desc logic. We'll try to increase the max X pos of the item desc
-	// but not a good sign
+	// receipts will have blocks on the edge of the header/summary and the line items/price. This set is to allow
+	// us to try different combinations, depending on the receipt
+	includeBlocksOnIntersectionToHeaderSummary := [][]bool{
+		{true, true},
+		{false, false},
+		{true, false},
+		{false, true},
+	}
 
-	bestDiff := 100000000.0
-	var bestReceiptImage *ReceiptImage
-	var bestReceiptDetail *ReceiptDetail
-	// we'll increment it by 0.01.
-	// FIXME: we should use a binary search as opposed to iterative search
-	for tolerance := 0.0; tolerance <= 0.25; tolerance += 0.01 {
-
-		config := ImageReceiptParseConfig{tolerance: tolerance, confidence: confidence}
+	for _, includeIntersectionOptions := range includeBlocksOnIntersectionToHeaderSummary {
+		println(fmt.Sprintf("to Header: %t, to summary: %t", includeIntersectionOptions[0], includeIntersectionOptions[1]))
+		config := ImageReceiptParseConfig{
+			regressionTolerance:           0.0,
+			ocrConfidence:                 confidence,
+			blocksOnHeaderLineAreHeader:   includeIntersectionOptions[0],
+			blocksOnSummaryLineAreSummary: includeIntersectionOptions[1],
+		}
 		ri := NewReceiptImage(resp, &config)
 		if ri == nil {
 			println(fmt.Sprintf("Failed to create receipt image"))
 			continue
-		} else if bestReceiptImage == nil {
-			bestReceiptImage = ri
 		}
+
+		println(ri.String())
 
 		// now convert from receipt image to receipt detail
 		retval, err := NewReceiptDetailFromReceiptImage(ri, &config)
@@ -617,6 +644,8 @@ func ParseImageReceipt(resp *textract.DetectDocumentTextOutput, expectedTotal fl
 			println(fmt.Sprintf("Failed to convert to receipt detail: %s", err.Error()))
 			continue
 		}
+
+		println(retval.String())
 
 		// sum the items and check expected total
 		// note we do some weird cents checking because
@@ -630,24 +659,11 @@ func ParseImageReceipt(resp *textract.DetectDocumentTextOutput, expectedTotal fl
 		expectedTotalCents := int(expectedTotal * 100.0)
 
 		if actualTotalCents == expectedTotalCents {
+			println("Success!!!!")
 			return retval, nil
 		}
-		diff := math.Abs(float64(expectedTotalCents) - float64(actualTotalCents))
-		if diff < bestDiff {
-			bestReceiptDetail = retval
-			bestReceiptImage = ri
-			bestDiff = diff
-		}
+		println(fmt.Sprintf("expected %v cents, got %v cents", expectedTotalCents, actualTotalCents))
 
-	}
-
-	println(fmt.Sprintf("Best difference: %v cents", bestDiff))
-	if bestReceiptImage != nil {
-		println(bestReceiptImage.String())
-	}
-
-	if bestReceiptDetail != nil {
-		println(bestReceiptDetail.String())
 	}
 
 	return nil, fmt.Errorf("failed to find a tolerance for this receipt")
