@@ -1,6 +1,7 @@
 package receipts
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -132,6 +133,14 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 			return
 		}
 
+		// TODO: why does bind not catch this?
+		if req.Data == "" || (req.ParseType == Image && req.ExpectedTotal == 0.0) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Errorf("failed to find data and possibly expected total"),
+			})
+			return
+		}
+
 		userID := c.Request.Context().Value(auth.AuthUserIDKey).(uuid.UUID)
 		if userID == uuid.Nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -156,6 +165,7 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 		receiptRequest.UserID = userID
 		receiptRequest.ParseStatus = parseStatus
 		receiptRequest.ParseType = req.ParseType
+		receiptRequest.ExpectedTotal = req.ExpectedTotal
 
 		err := repo.SaveReceiptRequest(&receiptRequest)
 		if err != nil {

@@ -30,6 +30,10 @@ func UploadContentToS3(session *session.Session, request ParseReceiptRequest) (s
 	// Create an uploader with the session and default options
 	uploader := s3manager.NewUploader(session)
 
+	if request.Data == "" || !strings.Contains(request.Data, "base64,") {
+		return "", fmt.Errorf("Failed to get data as base64 data")
+	}
+
 	// get the data header info (e.g. data:image/jpeg;base64,)
 	// TODO: do something with this information? perhaps not send it at all
 	base64key := "base64,"

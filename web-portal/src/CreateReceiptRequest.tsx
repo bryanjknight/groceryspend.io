@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { ParseReceiptRequest } from './models';
-import { createReceiptRequest } from './api';
+import { ParseReceiptRequest } from "./models";
+import { createReceiptRequest } from "./api";
 
 export function CreateReceiptRequest(): JSX.Element {
-
-  const [file, setFile] = useState(null as unknown as string);
+  const [file, setFile] = useState((null as unknown) as string);
   const [expectedTotalCost, setExpectedTotalCost] = useState(0.0);
   const [submit, setSubmit] = useState(false);
   const { getAccessTokenSilently } = useAuth0();
@@ -22,12 +21,10 @@ export function CreateReceiptRequest(): JSX.Element {
       reader.onload = () => {
         // TODO: better type checking
         if (reader.result === null) {
-          resolve(null)
-        }
-        else if ((reader.result as ArrayBuffer).byteLength !== undefined) {
-          reject(new Error("don't know how to handle arraybuffer"))
-        } 
-        else {
+          resolve(null);
+        } else if ((reader.result as ArrayBuffer).byteLength !== undefined) {
+          reject(new Error("don't know how to handle arraybuffer"));
+        } else {
           const result = reader.result as string;
           resolve(result);
         }
@@ -35,17 +32,20 @@ export function CreateReceiptRequest(): JSX.Element {
     });
   };
 
-  const handleFileInputChange = async (evt: React.ChangeEvent<HTMLInputElement>) => {
-    
+  const handleFileInputChange = async (
+    evt: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (!evt.target || !evt.target.files) {
-      setFile(null as unknown as string);
+      setFile((null as unknown) as string);
       return;
     }
-    const fileBase64 = await getBase64(evt.target.files[0]); 
-    setFile(fileBase64 || "")
-  }
+    const fileBase64 = await getBase64(evt.target.files[0]);
+    setFile(fileBase64 || "");
+  };
 
-  const handleExpectedCostChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExpectedCostChange = (
+    evt: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (!evt || !evt.target || !evt.target.value) {
       setExpectedTotalCost(0.0);
       return;
@@ -53,7 +53,7 @@ export function CreateReceiptRequest(): JSX.Element {
 
     const parsedEventTotalCost = parseFloat(evt.target.value);
     setExpectedTotalCost(parsedEventTotalCost);
-  }
+  };
 
   const audience = process.env.REACT_APP_AUDIENCE || "";
   const scope = "read:users";
@@ -76,9 +76,10 @@ export function CreateReceiptRequest(): JSX.Element {
             expectedTotal: expectedTotalCost,
           };
           await createReceiptRequest(req)(accessToken);
-          setFile(null as unknown as string);
-          setExpectedTotalCost(null as unknown as number);
           setSubmit(false);
+          setFile((null as unknown) as string);
+          setExpectedTotalCost((null as unknown) as number);
+          
         } catch (error) {
           console.error(error);
         }
@@ -88,10 +89,22 @@ export function CreateReceiptRequest(): JSX.Element {
 
   return (
     <div>
-      <input type="file" name="file" onChange={handleFileInputChange} />
-      <input type="text" name="expectedCost" onChange={handleExpectedCostChange} />
-      <button type="submit" name="submit" onClick={() => setSubmit(true) }>Submit</button>
+      <div>
+        <input type="file" name="file" onChange={handleFileInputChange} />{" "}
+      </div>
+      <div>
+        <label>Enter total cost (shown at bottom of receipt)</label>
+        <input
+          type="text"
+          name="expectedCost"
+          onChange={handleExpectedCostChange}
+        />
+      </div>
+      <div>
+        <button type="submit" name="submit" onClick={() => setSubmit(true)}>
+          Submit
+        </button>
+      </div>
     </div>
-  )
-
+  );
 }

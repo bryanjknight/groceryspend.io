@@ -28,7 +28,7 @@ export function Nav(): JSX.Element {
               pathname === '/requests' ? ' active' : ''
             }`}
           >
-            Create Request
+            Upload Receipt
           </Link>          
           <Link
             to="/receipts"
