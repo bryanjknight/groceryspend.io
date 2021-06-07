@@ -220,13 +220,6 @@ func (r *DefaultReceiptRepository) SaveReceiptRequest(request *ParseReceiptReque
 		user_id, original_url, request_timestamp, raw_html, request_type_id, status_type_id
 	)
 	VALUES( $1, $2, $3, $4, $5, $6)
-	ON CONFLICT (original_url) DO UPDATE SET
-		user_id = EXCLUDED.user_id,
-		original_url = EXCLUDED.original_url,
-		request_timestamp = EXCLUDED.request_timestamp, 
-		raw_html = EXCLUDED.raw_html,
-		request_type_id = EXCLUDED.request_type_id,
-		status_type_id = EXCLUDED.status_type_id
 	RETURNING id
 	`
 	urr := r.DbConnection.QueryRowContext(context.Background(), sql,
