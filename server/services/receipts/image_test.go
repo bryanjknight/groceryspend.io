@@ -2,6 +2,7 @@ package receipts
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,6 +12,26 @@ import (
 	"github.com/aws/aws-sdk-go/service/textract"
 	"groceryspend.io/server/utils"
 )
+
+func createMockBlock(text string, confidence float64, xyPts []float64) *textract.Block {
+	polygon := []*textract.Point{}
+
+	for i := 0; i < len(xyPts); i += 2 {
+		pt := textract.Point{
+			X: aws.Float64(xyPts[i]),
+			Y: aws.Float64(xyPts[i+1]),
+		}
+		polygon = append(polygon, &pt)
+	}
+	return &textract.Block{
+		Geometry: &textract.Geometry{
+			Polygon: polygon,
+		},
+		BlockType:  aws.String(textract.BlockTypeLine),
+		Text:       aws.String(text),
+		Confidence: aws.Float64(confidence),
+	}
+}
 
 func TestIntersect(t *testing.T) {
 
@@ -39,6 +60,7 @@ func TestIntersect(t *testing.T) {
 		regressionTolerance:           0.0,
 		blocksOnHeaderLineAreHeader:   true,
 		blocksOnSummaryLineAreSummary: true,
+		minArea:                       .5,
 	}
 
 	belowHeader := belowLinearRegressionLine(headerLr, config, !config.blocksOnHeaderLineAreHeader)(testBlock)
@@ -46,6 +68,67 @@ func TestIntersect(t *testing.T) {
 
 	if !belowHeader || !aboveSummary {
 		t.Errorf("Block should be between lines but was calculated to not be: %t, %t", belowHeader, aboveSummary)
+	}
+}
+
+func TestLineItemMatch(t *testing.T) {
+
+	type test struct {
+		priceBlock         *textract.Block
+		possibleItemBlocks []*textract.Block
+		prevLine           *linearRegression
+	}
+
+	testCases := []test{
+		{
+			priceBlock: createMockBlock("1.29 F", 99.99, []float64{0.635972797870636,
+				0.40718337893486023,
+				0.6904643774032593,
+				0.40655288100242615,
+				0.6904357671737671,
+				0.41863521933555603,
+				0.6359216570854187,
+				0.41925734281539917}),
+			possibleItemBlocks: []*textract.Block{
+				createMockBlock("1# PEELED BABY CARRT",
+					99.50421142578125, []float64{
+						0.3338685929775238,
+						0.4069613516330719,
+						0.5099449157714844,
+						0.4049155116081238,
+						0.5098243951797485,
+						0.4189956784248352,
+						0.3336635231971741,
+						0.42100998759269714}),
+			},
+		},
+	}
+
+	config := &ImageReceiptParseConfig{
+		regressionTolerance:           0.0,
+		ocrConfidence:                 90.0,
+		blocksOnHeaderLineAreHeader:   false,
+		blocksOnSummaryLineAreSummary: false,
+		minArea:                       .5,
+	}
+
+	for tcIdx, tc := range testCases {
+		t.Run(fmt.Sprintf("%v", tcIdx), func(t1 *testing.T) {
+			_, bottomLine, err := calculateSlopes(tc.priceBlock.Geometry.Polygon)
+			if err != nil {
+				t1.Errorf(err.Error())
+				return
+			}
+
+			possibleItems := bestEffortLineItemBlocks(
+				bottomLine, config, tc.possibleItemBlocks,
+			)
+
+			if len(possibleItems) != 1 {
+				t1.Errorf("expected 1, got %v", len(possibleItems))
+			}
+		})
+
 	}
 }
 
