@@ -183,7 +183,23 @@ func findPriceViaLinearRegression(block *textract.Block, candidateBlocks []*text
 		return nil, err
 	}
 
-	possibleItems := findBlocksByLinearSlope(candidateBlocks, topLine, bottomLine, config)
+	// remove the block from the candidate blocks to avoid picking itself
+	var itr int
+	for itr = 0; itr < len(candidateBlocks); itr++ {
+		if *candidateBlocks[itr].Id == *block.Id {
+			break
+		}
+	}
+
+	blocks := make([]*textract.Block, len(candidateBlocks))
+	copy(blocks, candidateBlocks)
+	if itr < len(candidateBlocks) {
+		copy(blocks[itr:], blocks[itr+1:]) // Shift a[i+1:] left one index.
+		blocks[len(blocks)-1] = nil        // Erase last element (write zero value).
+		blocks = blocks[:len(blocks)-1]    // Truncate slice.
+	}
+
+	possibleItems := findBlocksByLinearSlope(blocks, topLine, bottomLine, config)
 
 	if len(possibleItems) == 1 {
 		possibleItem := possibleItems[0]
@@ -642,7 +658,10 @@ func NewReceiptDetailFromReceiptImage(ri *ReceiptImage, config *ImageReceiptPars
 		return nil, fmt.Errorf("failed to find an order timestamp")
 	}
 
-	populateSummary(&retval, ri, config)
+	err = populateSummary(&retval, ri, config)
+	if err != nil {
+		return nil, err
+	}
 
 	retval.Items = items
 
@@ -661,51 +680,54 @@ func ParseImageReceipt(resp *textract.DetectDocumentTextOutput, expectedTotal fl
 		{false, true},
 	}
 
-	for _, includeIntersectionOptions := range includeBlocksOnIntersectionToHeaderSummary {
-		println(fmt.Sprintf("to Header: %t, to summary: %t", includeIntersectionOptions[0], includeIntersectionOptions[1]))
-		config := ImageReceiptParseConfig{
-			regressionTolerance:           0.0,
-			ocrConfidence:                 confidence,
-			blocksOnHeaderLineAreHeader:   includeIntersectionOptions[0],
-			blocksOnSummaryLineAreSummary: includeIntersectionOptions[1],
-			minArea:                       0.5,
+	for regressionTolerance := 0.0; regressionTolerance < 0.05; regressionTolerance += 0.01 {
+
+		for _, includeIntersectionOptions := range includeBlocksOnIntersectionToHeaderSummary {
+			println(fmt.Sprintf("to Header: %t, to summary: %t", includeIntersectionOptions[0], includeIntersectionOptions[1]))
+			config := ImageReceiptParseConfig{
+				regressionTolerance:           regressionTolerance,
+				ocrConfidence:                 confidence,
+				blocksOnHeaderLineAreHeader:   includeIntersectionOptions[0],
+				blocksOnSummaryLineAreSummary: includeIntersectionOptions[1],
+				minArea:                       0.5,
+			}
+			ri := NewReceiptImage(resp, &config)
+			if ri == nil {
+				println(fmt.Sprintf("Failed to create receipt image"))
+				continue
+			}
+
+			println(ri.String())
+
+			// now convert from receipt image to receipt detail
+			retval, err := NewReceiptDetailFromReceiptImage(ri, &config)
+			if err != nil {
+				// TODO: if it's the missing data error, we should immediately return
+				//       to avoid running it multiple time
+				println(fmt.Sprintf("Failed to convert to receipt detail: %s", err.Error()))
+				continue
+			}
+
+			println(retval.String())
+
+			// sum the items and check expected total
+			// note we do some weird cents checking because
+			// float64 and adding gives weird results
+			actualTotalCents := 0
+			for _, i := range retval.Items {
+				actualTotalCents += int(math.Round(float64(i.TotalCost) * 100.0))
+			}
+
+			actualTotalCents += int(retval.SalesTax * 100.0)
+			expectedTotalCents := int(expectedTotal * 100.0)
+
+			if actualTotalCents == expectedTotalCents {
+				println("Success!!!!")
+				return retval, nil
+			}
+			println(fmt.Sprintf("expected %v cents, got %v cents", expectedTotalCents, actualTotalCents))
+
 		}
-		ri := NewReceiptImage(resp, &config)
-		if ri == nil {
-			println(fmt.Sprintf("Failed to create receipt image"))
-			continue
-		}
-
-		println(ri.String())
-
-		// now convert from receipt image to receipt detail
-		retval, err := NewReceiptDetailFromReceiptImage(ri, &config)
-		if err != nil {
-			// TODO: if it's the missing data error, we should immediately return
-			//       to avoid running it multiple time
-			println(fmt.Sprintf("Failed to convert to receipt detail: %s", err.Error()))
-			continue
-		}
-
-		println(retval.String())
-
-		// sum the items and check expected total
-		// note we do some weird cents checking because
-		// float64 and adding gives weird results
-		actualTotalCents := 0
-		for _, i := range retval.Items {
-			actualTotalCents += int(math.Round(float64(i.TotalCost) * 100.0))
-		}
-
-		actualTotalCents += int(retval.SalesTax * 100.0)
-		expectedTotalCents := int(expectedTotal * 100.0)
-
-		if actualTotalCents == expectedTotalCents {
-			println("Success!!!!")
-			return retval, nil
-		}
-		println(fmt.Sprintf("expected %v cents, got %v cents", expectedTotalCents, actualTotalCents))
-
 	}
 
 	return nil, fmt.Errorf("failed to find a tolerance for this receipt")

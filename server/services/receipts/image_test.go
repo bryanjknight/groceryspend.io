@@ -164,16 +164,16 @@ func TestTextractResponse(t *testing.T) {
 			expectedTotal:     29.92,
 			expectedOrderDate: mustParseTime("01/02/2006", "04/06/2021"),
 		},
-		// {
-		// 	file:              filepath.Join(getTestDataDir(), "wegmans", "receipt1-apiResponse.json"),
-		// 	expectedTotal:     64.01,
-		// 	expectedOrderDate: mustParseTime("01/02/2006", "05/16/2021"),
-		// },
-		// {
-		// 	file:              filepath.Join(getTestDataDir(), "wegmans", "receipt2-apiResponse.json"),
-		// 	expectedTotal:     55.51,
-		// 	expectedOrderDate: mustParseTime("01/02/2006", "05/04/2021"),
-		// },
+		{
+			file:              filepath.Join(getTestDataDir(), "wegmans", "receipt1-apiResponse.json"),
+			expectedTotal:     64.01,
+			expectedOrderDate: mustParseTime("01/02/2006", "05/16/2021"),
+		},
+		{
+			file:              filepath.Join(getTestDataDir(), "wegmans", "receipt2-apiResponse.json"),
+			expectedTotal:     55.51,
+			expectedOrderDate: mustParseTime("01/02/2006", "05/04/2021"),
+		},
 		// {
 		// 	file:              filepath.Join(getTestDataDir(), "bjs", "receipt1-apiResponse.json"),
 		// 	expectedTotal:     282.43,

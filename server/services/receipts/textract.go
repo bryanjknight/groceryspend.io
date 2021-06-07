@@ -329,10 +329,10 @@ func PercentagePolygonCoveredByLine(lr *linearRegression, polygon []*textract.Po
 		return PolygonArea(top) / polygonArea, nil
 	} else if isAbove && len(top) > 4 {
 		// if we want above, but the above poly is a complex poly, just remove the bottom part from the overall area
-		return (polygonArea - PolygonArea(bottom)/polygonArea), nil
+		return (polygonArea - PolygonArea(bottom)) / polygonArea, nil
 	} else if !isAbove && len(top) <= 4 {
 		// if we want below, and the top is simple, then remove the top
-		return (polygonArea - PolygonArea(top)/polygonArea), nil
+		return (polygonArea - PolygonArea(top)) / polygonArea, nil
 	} else if !isAbove && len(top) > 5 {
 		// if we want below the line, and the top is complex, then just use the bottom
 		return PolygonArea(bottom) / polygonArea, nil
