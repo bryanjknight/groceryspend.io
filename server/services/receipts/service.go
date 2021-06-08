@@ -39,6 +39,13 @@ func HandleReceiptRequest(
 
 	receipt.UnparsedReceiptRequestID = receiptRequest.ID
 
+	// if no subtotal was provided, then calculate it
+	if receipt.SubtotalCost == 0.0 {
+		for _, item := range receipt.Items {
+			receipt.SubtotalCost += item.TotalCost
+		}
+	}
+
 	err = repo.SaveReceipt(receipt)
 	if err != nil {
 		println(fmt.Sprintf("Failed to save receipt for request %s", receiptRequest.ID.String()))
