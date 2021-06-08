@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { ParseReceiptRequest } from "./models";
 import { createReceiptRequest } from "./api";
@@ -8,6 +8,9 @@ export function CreateReceiptRequest(): JSX.Element {
   const [expectedTotalCost, setExpectedTotalCost] = useState(0.0);
   const [submit, setSubmit] = useState(false);
   const { getAccessTokenSilently } = useAuth0();
+
+  const fileInput = useRef((null as unknown) as HTMLInputElement);
+  const expectedCostInput = useRef((null as unknown) as HTMLInputElement);
 
   const getBase64 = (file: File): Promise<string | null> => {
     return new Promise((resolve, reject) => {
@@ -79,7 +82,13 @@ export function CreateReceiptRequest(): JSX.Element {
           setSubmit(false);
           setFile((null as unknown) as string);
           setExpectedTotalCost((null as unknown) as number);
-          
+
+          if (fileInput) {
+            fileInput.current.value = "";
+          }
+          if (expectedCostInput) {
+            expectedCostInput.current.value = "";
+          }
         } catch (error) {
           console.error(error);
         }
@@ -90,13 +99,19 @@ export function CreateReceiptRequest(): JSX.Element {
   return (
     <div>
       <div>
-        <input type="file" name="file" onChange={handleFileInputChange} />{" "}
+        <input
+          ref={fileInput}
+          type="file"
+          name="file"
+          onChange={handleFileInputChange}
+        />{" "}
       </div>
       <div>
         <label>Enter total cost (shown at bottom of receipt)</label>
         <input
           type="text"
           name="expectedCost"
+          ref={expectedCostInput}
           onChange={handleExpectedCostChange}
         />
       </div>
