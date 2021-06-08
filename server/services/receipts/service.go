@@ -72,7 +72,7 @@ func ParseReceipt(request ParseReceiptRequest, session *session.Session) (*Recei
 		receipt, err := ParseWfmHTMLRecipt(parsedHTML)
 		return &receipt, err
 	} else if request.ParseType == Image {
-		s3key, err := UploadContentToS3(session, request)
+		s3key, err := UploadReceiptRequestToS3(session, request)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +80,23 @@ func ParseReceipt(request ParseReceiptRequest, session *session.Session) (*Recei
 		if err != nil {
 			return nil, err
 		}
-		return ParseImageReceipt(textractResp, request.ExpectedTotal, float64(utils.GetOsValueAsFloat32("RECEIPTS_AWS_TEXTRACT_MIN_CONFIDENCE")))
+		rd, err := ParseImageReceipt(textractResp, request.ExpectedTotal, float64(utils.GetOsValueAsFloat32("RECEIPTS_AWS_TEXTRACT_MIN_CONFIDENCE")))
+
+		if err != nil {
+			// write textract response to file
+			s3key, s3Err := UploadTextractResponseToS3(session, &request, textractResp)
+
+			println("Failed to parse image receipt")
+			if s3Err != nil {
+				println("failed to upload textract")
+			} else {
+				println(fmt.Sprintf("textract response uploaded to %s", s3key))
+			}
+			return nil, err
+
+		}
+
+		return rd, nil
 
 	}
 

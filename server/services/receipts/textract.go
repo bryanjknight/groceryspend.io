@@ -18,8 +18,43 @@ import (
 	"groceryspend.io/server/utils"
 )
 
-// UploadContentToS3 will upload the request content to S3
-func UploadContentToS3(session *session.Session, request ParseReceiptRequest) (string, error) {
+// UploadTextractResponseToS3 uploads the textract response to S3
+func UploadTextractResponseToS3(session *session.Session, request *ParseReceiptRequest, textractResp *textract.DetectDocumentTextOutput) (string, error) {
+
+	// for mocking
+	if utils.GetOsValueAsBoolean("RECEIPTS_MOCK_AWS_RESPONSE") {
+		return utils.GetOsValue("RECEIPTS_MOCK_AWS_RESPONSE_FILE"), nil
+	}
+
+	// Create an uploader with the session and default options
+	uploader := s3manager.NewUploader(session)
+
+	s3key := fmt.Sprintf("images/%s/textract-response.json", request.ID.String())
+
+	resp, err := json.Marshal(textractResp)
+	if err != nil {
+		return "", err
+	}
+	reader := strings.NewReader(string(resp))
+
+	// Upload the file to S3.
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(utils.GetOsValue("RECEIPTS_AWS_S3_BUCKET_NAME")),
+		Key:    aws.String(s3key),
+		Body:   reader,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload file, %v", err)
+	}
+	if result == nil {
+		return "", fmt.Errorf("s3 upload result is null")
+	}
+
+	return s3key, nil
+}
+
+// UploadReceiptRequestToS3 will upload the request content to S3
+func UploadReceiptRequestToS3(session *session.Session, request ParseReceiptRequest) (string, error) {
 	// mock a response if we're running locally
 	if utils.GetOsValueAsBoolean("RECEIPTS_MOCK_AWS_RESPONSE") {
 		return utils.GetOsValue("RECEIPTS_MOCK_AWS_RESPONSE_FILE"), nil
