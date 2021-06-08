@@ -20,8 +20,6 @@ export function Receipts(): JSX.Element {
     return <Error message={error.message} />;
   }
 
-
-  // TODO: link to original receipt
   const getUrlLink = (receipt: ReceiptSummary) => 
     receipt.OriginalURL ? <a href={receipt.OriginalURL}>Link to Original Order</a> : ""
 

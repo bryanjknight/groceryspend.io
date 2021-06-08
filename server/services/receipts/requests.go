@@ -83,6 +83,8 @@ func ProcessReceiptRequests(workerName string) {
 					})
 			}
 
+			// TODO: update URL with S3 url if it's an image
+
 			receiptRequest.ParseStatus = Completed
 			repo.PatchReceiptRequest(&receiptRequest)
 			log.Printf("Done")
