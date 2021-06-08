@@ -1,4 +1,8 @@
+-- constraints we no longer want
 ALTER TABLE unparsed_receipt_requests DROP CONSTRAINT unparsed_receipt_requests_original_url_key;
+ALTER TABLE parsed_receipts DROP CONSTRAINT parsed_receipts_order_number_key;
+
+-- constraints we want to adjust the on delete 
 ALTER TABLE unparsed_receipt_requests DROP CONSTRAINT fk_request_id;
 ALTER TABLE unparsed_receipt_requests DROP CONSTRAINT fk_status_id;
 ALTER TABLE parsed_receipts DROP CONSTRAINT parsed_receipts_unparsed_receipt_request_id_fkey;

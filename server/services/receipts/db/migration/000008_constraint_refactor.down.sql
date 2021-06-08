@@ -7,6 +7,10 @@ ALTER TABLE unparsed_receipt_requests
   ADD CONSTRAINT unparsed_receipt_requests_original_url_key 
   UNIQUE (original_url);
 
+ALTER TABLE parsed_receipts 
+  ADD CONSTRAINT parsed_receipts_order_number_key 
+  UNIQUE (order_number); 
+
 ALTER TABLE unparsed_receipt_requests 
   ADD CONSTRAINT fk_request_id 
   FOREIGN KEY (request_type_id) 

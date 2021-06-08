@@ -142,16 +142,6 @@ func (r *DefaultReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 		order_number, order_timestamp, sales_tax, tip, service_fee, delivery_fee, discounts, unparsed_receipt_request_id, subtotal_cost
 	)
 	VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (order_number) DO UPDATE SET
-		order_number = EXCLUDED.order_number,
-		order_timestamp = EXCLUDED.order_timestamp,
-		sales_tax = EXCLUDED.sales_tax, 
-		tip = EXCLUDED.tip, 
-		service_fee = EXCLUDED.service_fee,
-		delivery_fee = EXCLUDED.delivery_fee, 
-		discounts = EXCLUDED.discounts, 
-		unparsed_receipt_request_id = EXCLUDED.unparsed_receipt_request_id,
-		subtotal_cost = EXCLUDED.subtotal_cost
 	RETURNING id
 	`
 	prRS := tx.QueryRowContext(context.Background(), sql,
