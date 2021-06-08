@@ -4,6 +4,9 @@ go 1.16
 
 require (
 	github.com/auth0/go-jwt-middleware v1.0.0
+	github.com/aws/aws-sdk-go v1.38.45
+	github.com/aws/aws-sdk-go-v2 v1.6.0 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.3.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.1
@@ -19,6 +22,7 @@ require (
 	github.com/lib/pq v1.10.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/montanaflynn/stats v0.6.6 // indirect
 	github.com/streadway/amqp v1.0.0
 	github.com/tkrajina/typescriptify-golang-structs v0.1.5
 	github.com/ugorji/go v1.2.5 // indirect

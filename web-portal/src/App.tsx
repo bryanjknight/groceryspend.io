@@ -10,6 +10,7 @@ import { Receipts } from "./Receipts";
 import { ReceiptDetails } from "./ReceiptDetails";
 import { Analytics } from "./Analytics";
 import Container from "react-bootstrap/Container";
+import { CreateReceiptRequest } from "./CreateReceiptRequest";
 
 // Use `createHashHistory` to use hash routing
 export const history = createBrowserHistory();
@@ -31,6 +32,7 @@ const App = (): JSX.Element => {
           {error && <Error message={error.message} />}
           <Switch>
             <Route path="/" exact />
+            <ProtectedRoute exact path="/requests" component={CreateReceiptRequest} />
             <ProtectedRoute exact path="/receipts" component={Receipts} />
             <ProtectedRoute
               exact

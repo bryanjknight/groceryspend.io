@@ -1,1 +1,1 @@
-ALTER TABLE parsed_items REMOVE COLUMN IF EXISTS category;
+ALTER TABLE parsed_items DROP COLUMN IF EXISTS category;

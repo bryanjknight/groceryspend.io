@@ -64,6 +64,17 @@ func GetOsValueAsDuration(key string) time.Duration {
 	return val
 }
 
+// GetOsValueAsFloat32 returns a float32 (e.g. 0.9)
+func GetOsValueAsFloat32(key string) float32 {
+	sval := GetOsValue(key)
+	val, err := strconv.ParseFloat(sval, 32)
+
+	if err != nil {
+		panic(fmt.Sprintf("Invalid duration value %v for key %v", sval, key))
+	}
+	return float32(val)
+}
+
 // InitializeEnvVars checks to see if an env file is the source of secrets
 func InitializeEnvVars() {
 	// load config from env by default, use NO_LOAD_ENV_FILE to use supplied env

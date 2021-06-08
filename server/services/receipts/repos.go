@@ -33,13 +33,18 @@ import (
 // ## for this git commit      ## //
 // ############################## //
 
+// A common question is "why not just always use latest"? The reasoning
+// is to allow an outside process to upgrade the database first before rolling out the
+// code that works for that specific schema version
+
 // DatabaseVersion is the desired database version for this git commit
-const DatabaseVersion = 6
+const DatabaseVersion = 8
 
 // ReceiptRepository contains the common storage/access patterns for receipts
 type ReceiptRepository interface {
 	SaveReceipt(receipt *ReceiptDetail) error
 	SaveReceiptRequest(request *ParseReceiptRequest) error
+	PatchReceiptRequest(request *ParseReceiptRequest) error
 	GetReceipts(user uuid.UUID) ([]*ReceiptSummary, error)
 	GetReceiptDetail(userID uuid.UUID, receiptID uuid.UUID) (*ReceiptDetail, error)
 	PatchReceiptItem(userID uuid.UUID, receiptID uuid.UUID, itemID uuid.UUID, req PatchReceiptItem) error
@@ -137,16 +142,6 @@ func (r *DefaultReceiptRepository) SaveReceipt(receipt *ReceiptDetail) error {
 		order_number, order_timestamp, sales_tax, tip, service_fee, delivery_fee, discounts, unparsed_receipt_request_id, subtotal_cost
 	)
 	VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (order_number) DO UPDATE SET
-		order_number = EXCLUDED.order_number,
-		order_timestamp = EXCLUDED.order_timestamp,
-		sales_tax = EXCLUDED.sales_tax, 
-		tip = EXCLUDED.tip, 
-		service_fee = EXCLUDED.service_fee,
-		delivery_fee = EXCLUDED.delivery_fee, 
-		discounts = EXCLUDED.discounts, 
-		unparsed_receipt_request_id = EXCLUDED.unparsed_receipt_request_id,
-		subtotal_cost = EXCLUDED.subtotal_cost
 	RETURNING id
 	`
 	prRS := tx.QueryRowContext(context.Background(), sql,
@@ -216,14 +211,9 @@ func saveParsedItem(tx *sql.Tx, prID uuid.UUID, pi *ReceiptItem) error {
 func (r *DefaultReceiptRepository) SaveReceiptRequest(request *ParseReceiptRequest) error {
 	sql := `
 	INSERT INTO unparsed_receipt_requests (
-		user_id, original_url, request_timestamp, raw_html
+		user_id, original_url, request_timestamp, raw_html, request_type_id, status_type_id
 	)
-	VALUES( $1, $2, $3, $4)
-	ON CONFLICT (original_url) DO UPDATE SET
-		user_id = EXCLUDED.user_id,
-		original_url = EXCLUDED.original_url,
-		request_timestamp = EXCLUDED.request_timestamp, 
-		raw_html = EXCLUDED.raw_html
+	VALUES( $1, $2, $3, $4, $5, $6)
 	RETURNING id
 	`
 	urr := r.DbConnection.QueryRowContext(context.Background(), sql,
@@ -231,6 +221,8 @@ func (r *DefaultReceiptRepository) SaveReceiptRequest(request *ParseReceiptReque
 		request.URL,
 		request.Timestamp,
 		request.Data,
+		request.ParseType,
+		request.ParseStatus,
 	)
 	var urrID uuid.UUID
 	err := urr.Scan(&urrID)
@@ -257,6 +249,37 @@ func (r *DefaultReceiptRepository) SaveReceiptRequest(request *ParseReceiptReque
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// PatchReceiptRequest - update request row
+func (r *DefaultReceiptRepository) PatchReceiptRequest(request *ParseReceiptRequest) error {
+	sql := `
+	UPDATE unparsed_receipt_requests SET
+		original_url = $3, 
+		request_timestamp = $4, 
+		raw_html = $5, 
+		request_type_id = $6, 
+		status_type_id = $7
+	WHERE id = $1 and user_id = $2
+	RETURNING id
+	`
+	row := r.DbConnection.QueryRowContext(context.Background(), sql,
+		request.ID,
+		request.UserID,
+		request.URL,
+		request.Timestamp,
+		request.Data,
+		request.ParseType,
+		request.ParseStatus,
+	)
+
+	var urrID uuid.UUID
+	err := row.Scan(&urrID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

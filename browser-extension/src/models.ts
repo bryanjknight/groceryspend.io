@@ -7,6 +7,8 @@ export class ParseReceiptRequest {
   timestamp: Date;
   data: string;
   userId?: string;
+  parseStatus?: number;
+  parseType: number;
 
   constructor(source: any = {}) {
     if ("string" === typeof source) source = JSON.parse(source);
@@ -15,5 +17,7 @@ export class ParseReceiptRequest {
     this.timestamp = new Date(source["timestamp"]);
     this.data = source["data"];
     this.userId = source["userId"];
+    this.parseStatus = source["parseStatus"];
+    this.parseType = source["parseType"];
   }
 }

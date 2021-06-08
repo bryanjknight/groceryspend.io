@@ -31,15 +31,15 @@ type ParseStatus int
 
 // Valid ParseStatus
 const (
-	Submitted           ParseStatus = iota + 1 // EnumIndex = 1
-	CompleteWithSuccess                        // EnumIndex = 2
-	CompleteWithErrors                         // EnumIndex = 3
-	Failed                                     // EnumIndex = 4
+	Submitted  ParseStatus = iota + 1 // EnumIndex = 1
+	Processing                        // EnumIndex = 2
+	Completed                         // EnumIndex = 3
+	Error                             // EnumIndex = 4
 )
 
 // String - Creating common behavior - give the type a String function
 func (d ParseStatus) String() string {
-	return [...]string{"Submitted", "CompleteWithSuccess", "CompleteWithErrors", "Failed"}[d-1]
+	return [...]string{"Submitted", "Processing", "Completed", "Error"}[d-1]
 }
 
 // EnumIndex - Creating common behavior - give the type a EnumIndex function
@@ -50,13 +50,14 @@ func (d ParseStatus) EnumIndex() int {
 // ParseReceiptRequest is an external rqeuest to parse a receipt
 type ParseReceiptRequest struct {
 	ID             uuid.UUID `json:"id,omitempty"`
-	URL            string    `json:"url"`
+	URL            string    `json:"url,omitempty"`
 	Timestamp      time.Time `json:"timestamp"`
 	Data           string    `json:"data"`
 	UserID         uuid.UUID `json:"userId,omitempty"`
 	ReceiptSummary *ReceiptSummary
 	ParseStatus    ParseStatus `json:"parseStatus,omitempty"`
-	ParseType      ParseType   `json:"parseType,omitempty"` // TODO: make this required on submission
+	ParseType      ParseType   `json:"parseType"`
+	ExpectedTotal  float32     `json:"expectedTotal,omitempty"`
 }
 
 // ReceiptSummary is a summary of a receipt that has been processed

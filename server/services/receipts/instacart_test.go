@@ -2,30 +2,14 @@ package receipts
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/net/html"
+	"groceryspend.io/server/utils"
 )
-
-// TODO: memoize
-func getTestDataDir() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(filename))), "test", "data")
-}
-
-func readFileAsString(filename string) string {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-
-	return string(b)
-}
 
 func TestInstacartReceipt(t *testing.T) {
 
@@ -62,7 +46,7 @@ func TestInstacartReceipt(t *testing.T) {
 	for _, test := range tests {
 		testDataDir := getTestDataDir()
 		orderNumber := test.OrderNumber
-		fileContent := readFileAsString(filepath.Join(testDataDir, "instacart", fmt.Sprintf("%s.txt", orderNumber)))
+		fileContent := utils.ReadFileAsString(filepath.Join(testDataDir, "instacart", fmt.Sprintf("%s.txt", orderNumber)))
 		fileContentReader := strings.NewReader(fileContent)
 
 		parsedHTML, err := html.Parse(fileContentReader)

@@ -1,6 +1,7 @@
 package receipts
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -120,6 +121,7 @@ func handleReceiptDetail(repo ReceiptRepository) gin.HandlerFunc {
 	return fn
 }
 
+// TODO: break this out into a different router (e.g. /requests/)
 func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Client) gin.HandlerFunc {
 
 	fn := func(c *gin.Context) {
@@ -127,6 +129,14 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 		if err := c.ShouldBind(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
+			})
+			return
+		}
+
+		// TODO: why does bind not catch this?
+		if req.Data == "" || (req.ParseType == Image && req.ExpectedTotal == 0.0) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Errorf("failed to find data and possibly expected total"),
 			})
 			return
 		}
@@ -139,12 +149,23 @@ func handleSubmitReceipt(repo ReceiptRepository, categorizeClient categorize.Cli
 			return
 		}
 
+		parseStatus := req.ParseStatus
+		if parseStatus == 0 {
+			parseStatus = Submitted
+		}
+
 		// submit request to be parsed
 		receiptRequest := ParseReceiptRequest{}
+
+		// TODO: upload to file service (e.g. local file system, s3, etc)
+		//       for now, we'll store the actual data in the db
 		receiptRequest.Data = req.Data
 		receiptRequest.Timestamp = time.Now()
 		receiptRequest.URL = req.URL
 		receiptRequest.UserID = userID
+		receiptRequest.ParseStatus = parseStatus
+		receiptRequest.ParseType = req.ParseType
+		receiptRequest.ExpectedTotal = req.ExpectedTotal
 
 		err := repo.SaveReceiptRequest(&receiptRequest)
 		if err != nil {

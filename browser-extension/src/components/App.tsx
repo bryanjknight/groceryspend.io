@@ -38,6 +38,8 @@ export const App = (props: AppProps): JSX.Element => {
           url: resp.url,
           timestamp: new Date(),
           data: resp.dom,
+          // we only support html requests from the browser extension
+          parseType: 1,
         }),
       }).then((resp) => {
         alert(resp);
