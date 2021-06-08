@@ -20,6 +20,11 @@ export function Receipts(): JSX.Element {
     return <Error message={error.message} />;
   }
 
+
+  // TODO: link to original receipt
+  const getUrlLink = (receipt: ReceiptSummary) => 
+    receipt.OriginalURL ? <a href={receipt.OriginalURL}>Link to Original Order</a> : ""
+
   return (
     <table className="table">
       <thead>
@@ -34,9 +39,7 @@ export function Receipts(): JSX.Element {
         {data?.map((receipt: ReceiptSummary, i: number) => (
           <tr key={receipt.ID}>
             <td>{receipt.OrderTimestamp.toDateString()}</td>
-            <td>
-              <a href={receipt.OriginalURL}>Link to Original Order</a>
-            </td>
+            <td>{getUrlLink(receipt)}</td>
             <td>${receipt.TotalCost.toFixed(2)}</td>
             <td>
               <Link
