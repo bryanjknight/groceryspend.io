@@ -33,6 +33,10 @@ import (
 // ## for this git commit      ## //
 // ############################## //
 
+// A common question is "why not just always use latest"? The reasoning
+// is to allow an outside process to upgrade the database first before rolling out the
+// code that works for that specific schema version
+
 // DatabaseVersion is the desired database version for this git commit
 const DatabaseVersion = 8
 
