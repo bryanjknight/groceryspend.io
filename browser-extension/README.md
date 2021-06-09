@@ -8,7 +8,11 @@ The browswer extension contains the following components:
 
 ## Notes on OAuth2
 
-OAuth2 and browser extensions do not have a well implemented solution. This is because `laundWebAuthFlow` assumes only one exchange of information between the auth server and the client. The new guidance is to use PKCE, which makes two requests (one for the code challenge, one to get the access token). Due to this limiation, the OAuth2 workflow had to be implemented manually as opposed to a framework. This is further shown with the deprecation of the [auth0-chrome example repo](https://github.com/auth0-community/auth0-chrome) as well as [feedback from Auth0 of no longer supporting the repo](https://community.auth0.com/t/chrome-extension-advice/38887/9)
+The current guidance for single page applications and browser plugins is to use Proof Key for Code Exchange (PKCE) instead of a client secret (which is traditionally used in server side applications). More details are discussed [here](https://auth0.com/docs/flows/authorization-code-flow-with-proof-key-for-code-exchange-pkce), but in essence, the client secret cannot be securely stored within the browser; therefore, we need to use a different approach. The previous link includes a useful flow chart describing the different interactions bewteen the user, the client, the auth server, and our API server.
+
+OAuth2 PKCE and browser extensions do not have a well implemented solution. This is because `laundWebAuthFlow` assumes only one exchange of information between the auth server and the client. where two requests are necessary (one for the code challenge, one to get the access token).
+
+Due to this limiation, the OAuth2 workflow had to be implemented manually as opposed to a framework. This is further shown with the deprecation of the [auth0-chrome example repo](https://github.com/auth0-community/auth0-chrome) as well as [feedback from Auth0 of no longer supporting the repo](https://community.auth0.com/t/chrome-extension-advice/38887/9)
 
 ## Testing
 
