@@ -8,9 +8,9 @@ Interacting with server through a web interface.
 
 ## Setup
 * `yarn` to install all packages
-* `yarn watch` to update webpack and run on `localhost:3000`
+* `yarn start` to update webpack and run on `localhost:3000`
 
-## Known hacks
+## Known Workarounds
 ### Storybook 6 and Webpack 5 don't play well nice together (yet)
 In order to get it to work, I had to do the following:
 * `npx sb@next init --builder webpack5` to fresh install storybook
