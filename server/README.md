@@ -45,3 +45,5 @@ RDBMS explorer. Connect to `localhost:18080` with the following information:
 | Password | `example` |
 | Database | `postgres` | 
 
+### RabbitMQ admin console
+Used for monitoring the local RabbitMQ instance. Connect to `localhost:15672` and login with `guest/guest`
