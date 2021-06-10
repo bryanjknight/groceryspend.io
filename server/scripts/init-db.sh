@@ -21,6 +21,9 @@ CREATE DATABASE usersdb;
     
 CREATE USER receipts PASSWORD 'receipts-password';
 CREATE DATABASE receiptsdb;
+
+CREATE USER payments PASSWORD 'payments-password';
+CREATE DATABASE paymentsdb;
 EOSQL
 fi
 
@@ -28,6 +31,7 @@ fi
 psql --set=sslmode="$SSL_REQUIRE" -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     GRANT ALL PRIVILEGES ON DATABASE usersdb TO users;
     GRANT ALL PRIVILEGES ON DATABASE receiptsdb TO receipts;
+    GRANT ALL PRIVILEGES ON DATABASE paymentsdb TO payments;
 EOSQL
 
 # install uuid extesnsion on users
@@ -37,5 +41,10 @@ EOSQL
 
 # install uuid extesnsion on receipts
 psql --set=sslmode="$SSL_REQUIRE" -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "receiptsdb" <<-EOSQL
+    CREATE EXTENSION "uuid-ossp" 
+EOSQL
+
+# install uuid extesnsion on payments
+psql --set=sslmode="$SSL_REQUIRE" -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "paymentsdb" <<-EOSQL
     CREATE EXTENSION "uuid-ossp" 
 EOSQL

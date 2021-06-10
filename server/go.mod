@@ -24,6 +24,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/montanaflynn/stats v0.6.6 // indirect
 	github.com/streadway/amqp v1.0.0
+	github.com/stripe/stripe-go/v72 v72.50.0 // indirect
 	github.com/tkrajina/typescriptify-golang-structs v0.1.5
 	github.com/ugorji/go v1.2.5 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect

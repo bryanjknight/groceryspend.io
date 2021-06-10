@@ -44,12 +44,32 @@ resource "digitalocean_database_user" "users" {
   name       = "users"
 }
 
+resource "digitalocean_database_db" "payments" {
+  depends_on = [
+    digitalocean_database_cluster.postgres
+  ]
+
+  cluster_id = digitalocean_database_cluster.postgres.id
+  name       = "paymentsdb"
+}
+
+resource "digitalocean_database_user" "payments" {
+  depends_on = [
+    digitalocean_database_cluster.postgres
+  ]
+
+  cluster_id = digitalocean_database_cluster.postgres.id
+  name       = "payments"
+}
+
 resource "null_resource" "setup_db" {
   depends_on = [
     digitalocean_database_db.receipts,
     digitalocean_database_db.users,
+    digitalocean_database_db.payments,
     digitalocean_database_user.receipts,
-    digitalocean_database_user.users
+    digitalocean_database_user.users,
+    digitalocean_database_user.payments
   ]
 
   # setup receiptsdb and receipts via the bastion

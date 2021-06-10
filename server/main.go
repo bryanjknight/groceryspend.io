@@ -7,6 +7,7 @@ import (
 	"groceryspend.io/server/middleware"
 	"groceryspend.io/server/services/analytics"
 	"groceryspend.io/server/services/categorize"
+	"groceryspend.io/server/services/payments"
 	"groceryspend.io/server/services/receipts"
 	"groceryspend.io/server/utils"
 )
@@ -41,6 +42,7 @@ func main() {
 	// create repos and clients
 	receiptsRepo := receipts.NewDefaultReceiptRepository()
 	categorizeClient := categorize.NewDefaultClient()
+	payments.NewStripeSubscriptionService()
 
 	// if desired, run process receipts in the same process
 	if utils.GetOsValueAsBoolean("RECEIPTS_RUN_WORKER_IN_PROCESS") {

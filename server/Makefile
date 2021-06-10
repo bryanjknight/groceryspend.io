@@ -39,6 +39,18 @@ export-ext-model:
 export-portal-model:
 	PORTAL_PROJECT_DIR=../web-portal go run cmd/typescriptify/portal/export.go
 
+migrate-payments-up:
+	migrate \
+		-path services/payments/db/migration \
+		-database "postgres://postgres:example@localhost:5432/paymentsdb?sslmode=disable" \
+		-verbose up
+
+migrate-payments-down:
+	migrate \
+		-path services/payments/db/migration \
+		-database "postgres://postgres:example@localhost:5432/paymentsdb?sslmode=disable" \
+		-verbose down
+
 migrate-receipts-up:
 	migrate \
 		-path services/receipts/db/migration \
