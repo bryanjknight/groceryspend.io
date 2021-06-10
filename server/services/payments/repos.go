@@ -7,6 +7,12 @@ import (
 	"log"
 	"time"
 
+	// load the postgres river
+	_ "github.com/lib/pq"
+
+	// load source file driver
+	_ "github.com/golang-migrate/migrate/source/file"
+
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	"github.com/google/uuid"
@@ -42,6 +48,39 @@ type StripeSubscriptionRepository struct {
 	sc *client.API
 }
 
+// NewStripeSubscriptionService create a new stripe subscription repo
+func NewStripeSubscriptionService() *StripeSubscriptionRepository {
+
+	db, err := sqlx.Open("postgres", utils.GetOsValue("PAYMENTS_POSTGRES_CONN_STR"))
+	if err != nil {
+		panic(err)
+	}
+
+	// run migration
+	migrationPath := "file://./services/payments/db/migration"
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationPath,
+		"postgres", driver)
+	if err != nil {
+		log.Fatalf("Unable to get migration instance: %s", err)
+	}
+
+	err = m.Migrate(DatabaseVersion)
+	if err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Database migration failed: %s", err)
+	}
+
+	// create api client connection with stripe
+	sc := &client.API{}
+	sc.Init(utils.GetOsValue("PAYMENTS_STRIPE_SECRET_KEY"), nil)
+
+	return &StripeSubscriptionRepository{
+		sc: sc,
+		db: db,
+	}
+}
+
 // GetOrCreateCustomer fetches the customer object or creates one if one doesn't exist
 func (r *StripeSubscriptionRepository) GetOrCreateCustomer(userID uuid.UUID) (*Customer, error) {
 
@@ -67,7 +106,8 @@ func (r *StripeSubscriptionRepository) GetOrCreateCustomer(userID uuid.UUID) (*C
 	} else if err != nil && err == sql.ErrNoRows {
 		// if the customer doesn't exist, go created it
 		params := &stripe.CustomerParams{
-			Description: stripe.String("My First Test Customer (created for API docs)"),
+			Description: stripe.String(
+				fmt.Sprintf("Canonical user ID: %s", userID.String())),
 		}
 		c, err := r.sc.Customers.New(params)
 
@@ -78,7 +118,7 @@ func (r *StripeSubscriptionRepository) GetOrCreateCustomer(userID uuid.UUID) (*C
 		newCustomerSQL := `
 			INSERT INTO customers (id, stripe_customer_id)
 			VALUES ($1, $2)
-			RETURNING *
+			RETURNING id, stripe_customer_id as StripeCustomerID
 		`
 
 		row = r.db.QueryRowxContext(context.Background(), newCustomerSQL, userID, c.ID)
@@ -101,7 +141,7 @@ func (r *StripeSubscriptionRepository) GetCurrentUserSubscription(customer *Cust
 	getSubscriptionSQL := `
 		SELECT *
 		FROM subscriptions
-		WHERE user_id = $1 and canceled_at is null
+		WHERE customer_id = $1 and canceled_at is null
 	`
 
 	rows, err := r.db.QueryxContext(context.Background(), getSubscriptionSQL, customer.ID)
@@ -120,6 +160,10 @@ func (r *StripeSubscriptionRepository) GetCurrentUserSubscription(customer *Cust
 		var tmp Subscription
 		rows.StructScan(&tmp)
 		results = append(results, &tmp)
+	}
+
+	if len(results) == 0 {
+		return nil, nil
 	}
 
 	// make sure we don't have multiple subscriptions
@@ -172,7 +216,7 @@ func (r *StripeSubscriptionRepository) CreateSubscription(customer *Customer, su
 			stripe_client_secret
 		)
 		VALUES (
-			$1, $2, $3, $4, $5
+			$1, $2, $3, $4
 		)
 		RETURNING id
 	`
@@ -226,38 +270,6 @@ func (r *StripeSubscriptionRepository) GetSubscriptionsRequiringPayment(daysSinc
 // ProcessPayment executes a payment for a given subscription
 func (r *StripeSubscriptionRepository) ProcessPayment(subscription *Subscription) error {
 	return fmt.Errorf("not implemented")
-}
-
-// NewStripeSubscriptionService create a new stripe subscription repo
-func NewStripeSubscriptionService() *StripeSubscriptionRepository {
-
-	db, err := sqlx.Open("postgres", utils.GetOsValue("PAYMENTS_POSTGRES_CONN_STR"))
-	if err != nil {
-		panic(err)
-	}
-
-	// run migration
-	migrationPath := "file://./services/payments/db/migration"
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
-	m, err := migrate.NewWithDatabaseInstance(
-		migrationPath,
-		"postgres", driver)
-	if err != nil {
-		log.Fatalf("Unable to get migration instance: %s", err)
-	}
-
-	err = m.Migrate(DatabaseVersion)
-	if err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("Database migration failed: %s", err)
-	}
-
-	// create api client connection with stripe
-	sc := &client.API{}
-	sc.Init(utils.GetOsValue("PAYMENTS_STRIPE_SECRET_KEY"), nil)
-
-	return &StripeSubscriptionRepository{
-		sc: sc,
-	}
 }
 
 // FreeService manages how many free receipts users get to start
