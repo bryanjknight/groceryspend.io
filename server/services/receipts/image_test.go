@@ -8,51 +8,42 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/textract"
+	"groceryspend.io/server/services/ocr"
 	"groceryspend.io/server/utils"
 )
 
-func createMockBlock(text string, confidence float64, xyPts []float64) *textract.Block {
-	polygon := []*textract.Point{}
+func createMockBlock(text string, confidence float64, xyPts []float64) *ocr.Block {
 
-	for i := 0; i < len(xyPts); i += 2 {
-		pt := textract.Point{
-			X: aws.Float64(xyPts[i]),
-			Y: aws.Float64(xyPts[i+1]),
-		}
-		polygon = append(polygon, &pt)
-	}
-	return &textract.Block{
-		Geometry: &textract.Geometry{
-			Polygon: polygon,
-		},
-		BlockType:  aws.String(textract.BlockTypeLine),
-		Text:       aws.String(text),
-		Confidence: aws.Float64(confidence),
+	return &ocr.Block{
+		TopLeft:     &ocr.Point{X: xyPts[0], Y: xyPts[1]},
+		TopRight:    &ocr.Point{X: xyPts[2], Y: xyPts[3]},
+		BottomRight: &ocr.Point{X: xyPts[4], Y: xyPts[5]},
+		BottomLeft:  &ocr.Point{X: xyPts[6], Y: xyPts[7]},
+		Text:        text,
+		Confidence:  confidence,
 	}
 }
 
 func TestIntersect(t *testing.T) {
 
-	testBlock := &textract.Block{
-		Geometry: &textract.Geometry{
-			BoundingBox: &textract.BoundingBox{},
-			Polygon:     []*textract.Point{{X: aws.Float64(0.6366869807243347), Y: aws.Float64(0.16261744499206543)}, {X: aws.Float64(0.679876446723938), Y: aws.Float64(0.16301347315311432)}, {X: aws.Float64(0.6794444918632507), Y: aws.Float64(0.17910079658031464)}, {X: aws.Float64(0.636359691619873), Y: aws.Float64(0.17870093882083893)}},
-		},
-		BlockType:  aws.String(textract.BlockTypeLine),
-		Text:       aws.String("9.99"),
-		Confidence: aws.Float64(99.999),
+	testBlock := &ocr.Block{
+		TopLeft:     &ocr.Point{X: 0.6366869807243347, Y: 0.16261744499206543},
+		TopRight:    &ocr.Point{X: 0.679876446723938, Y: 0.16301347315311432},
+		BottomRight: &ocr.Point{X: 0.6794444918632507, Y: 0.17910079658031464},
+		BottomLeft:  &ocr.Point{X: 0.636359691619873, Y: 0.17870093882083893},
+		Text:        "9.99",
+		Confidence:  99.999,
 	}
 
-	headerLr := &linearRegression{
-		slope:        0.008918718940121978,
-		intersection: 0.12054234549731022,
+	headerLr := &ocr.LinearRegression{
+		Slope:     0.008918718940121978,
+		Intercept: 0.12054234549731022,
 	}
 
-	summaryLr := &linearRegression{
-		slope:        0.01054189482192841,
-		intersection: 0.35500219741221267,
+	summaryLr := &ocr.LinearRegression{
+		Slope:     0.01054189482192841,
+		Intercept: 0.35500219741221267,
 	}
 
 	config := &ImageReceiptParseConfig{
@@ -74,9 +65,9 @@ func TestIntersect(t *testing.T) {
 func TestLineItemMatch(t *testing.T) {
 
 	type test struct {
-		priceBlock         *textract.Block
-		possibleItemBlocks []*textract.Block
-		prevLine           *linearRegression
+		priceBlock         *ocr.Block
+		possibleItemBlocks []*ocr.Block
+		prevLine           *ocr.LinearRegression
 	}
 
 	testCases := []test{
@@ -89,7 +80,7 @@ func TestLineItemMatch(t *testing.T) {
 				0.41863521933555603,
 				0.6359216570854187,
 				0.41925734281539917}),
-			possibleItemBlocks: []*textract.Block{
+			possibleItemBlocks: []*ocr.Block{
 				createMockBlock("1# PEELED BABY CARRT",
 					99.50421142578125, []float64{
 						0.3338685929775238,
@@ -114,7 +105,7 @@ func TestLineItemMatch(t *testing.T) {
 
 	for tcIdx, tc := range testCases {
 		t.Run(fmt.Sprintf("%v", tcIdx), func(t1 *testing.T) {
-			_, bottomLine, err := calculateSlopes(tc.priceBlock.Geometry.Polygon)
+			_, bottomLine, err := calculateSlopesForBlock(tc.priceBlock)
 			if err != nil {
 				t1.Errorf(err.Error())
 				return
@@ -191,7 +182,12 @@ func TestTextractResponse(t *testing.T) {
 				println(err.Error())
 			}
 
-			receiptDetail, err := ParseImageReceipt(&response, testInstance.expectedTotal, confidence)
+			image, err := ocr.TextractResponseToImage(&response)
+			if err != nil {
+				t.Fatalf("failed to load repsonse %s", testInstance.file)
+			}
+
+			receiptDetail, err := ParseImageReceipt(image, testInstance.expectedTotal, confidence)
 			if err != nil {
 				t.Errorf("error while processing %s: %s", testInstance.file, err.Error())
 			} else if receiptDetail == nil {
