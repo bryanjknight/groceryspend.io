@@ -1,25 +1,23 @@
-package receipts
+package ocr
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/textract"
 	"github.com/montanaflynn/stats"
 )
 
-func f(x float64, y float64) *textract.Point {
-	return &textract.Point{
-		X: aws.Float64(x),
-		Y: aws.Float64(y),
+func f(x float64, y float64) *Point {
+	return &Point{
+		X: x,
+		Y: y,
 	}
 }
 
-func makePolygon(xyPts []float64) []*textract.Point {
+func makePolygon(xyPts []float64) []*Point {
 
-	retval := []*textract.Point{}
+	retval := []*Point{}
 	for i := 0; i < len(xyPts); i += 2 {
 		retval = append(retval, f(xyPts[i], xyPts[i+1]))
 	}
@@ -27,74 +25,66 @@ func makePolygon(xyPts []float64) []*textract.Point {
 	return retval
 }
 
-func polygonsAreEqual(a []*textract.Point, b []*textract.Point) (bool, error) {
+func polygonsAreEqual(a []*Point, b []*Point) (bool, error) {
 	if len(a) != len(b) {
 		return false, fmt.Errorf("lengths not the same, got %v and %v", len(a), len(b))
 	}
 
 	for i := 0; i < len(a); i++ {
-		x1, _ := stats.Round(*a[i].X, 5)
-		y1, _ := stats.Round(*a[i].Y, 5)
-		x2, _ := stats.Round(*b[i].X, 5)
-		y2, _ := stats.Round(*b[i].Y, 5)
+		x1, _ := stats.Round(a[i].X, 5)
+		y1, _ := stats.Round(a[i].Y, 5)
+		x2, _ := stats.Round(b[i].X, 5)
+		y2, _ := stats.Round(b[i].Y, 5)
 		if x1 != x2 {
-			return false, fmt.Errorf("i: %v, Ax: %v, Bx: %v", i, *a[i].X, *b[i].X)
+			return false, fmt.Errorf("i: %v, Ax: %v, Bx: %v", i, a[i].X, b[i].X)
 		}
 		if y1 != y2 {
-			return false, fmt.Errorf("i: %v, Ay: %v, By: %v", i, *a[i].Y, *b[i].Y)
+			return false, fmt.Errorf("i: %v, Ay: %v, By: %v", i, a[i].Y, b[i].Y)
 		}
 	}
 
 	return true, nil
 }
 
-func polygonToString(polygon []*textract.Point) string {
+func polygonToString(polygon []*Point) string {
 	buffer := strings.Builder{}
 
 	for _, pt := range polygon {
-		buffer.WriteString(fmt.Sprintf("(%v, %v) ", *pt.X, *pt.Y))
+		buffer.WriteString(fmt.Sprintf("(%v, %v) ", pt.X, pt.Y))
 	}
 
 	return buffer.String()
 }
 
 func TestPolygonFromBlocks(t *testing.T) {
-	blocks := []*textract.Block{
+	blocks := []*Block{
 		{
-			Geometry: &textract.Geometry{
-				Polygon: []*textract.Point{
-					{X: aws.Float64(1), Y: aws.Float64(1)},
-					{X: aws.Float64(2), Y: aws.Float64(1)},
-					{X: aws.Float64(2), Y: aws.Float64(2)},
-					{X: aws.Float64(1), Y: aws.Float64(2)},
-				},
-			},
+			TopLeft:     &Point{X: 1, Y: 1},
+			TopRight:    &Point{X: 2, Y: 1},
+			BottomRight: &Point{X: 2, Y: 2},
+			BottomLeft:  &Point{X: 1, Y: 2},
 		},
 		{
-			Geometry: &textract.Geometry{
-				Polygon: []*textract.Point{
-					{X: aws.Float64(1), Y: aws.Float64(3)},
-					{X: aws.Float64(3), Y: aws.Float64(3)},
-					{X: aws.Float64(4), Y: aws.Float64(4)},
-					{X: aws.Float64(1), Y: aws.Float64(4)},
-				},
-			},
+			TopLeft:     &Point{X: 1, Y: 3},
+			TopRight:    &Point{X: 3, Y: 3},
+			BottomRight: &Point{X: 4, Y: 4},
+			BottomLeft:  &Point{X: 1, Y: 4},
 		},
 	}
-	expectedPolygon := []*textract.Point{
-		{X: aws.Float64(1), Y: aws.Float64(1)},
-		{X: aws.Float64(4), Y: aws.Float64(1)},
-		{X: aws.Float64(4), Y: aws.Float64(4)},
-		{X: aws.Float64(1), Y: aws.Float64(4)},
+	expectedPolygon := []*Point{
+		{X: 1, Y: 1},
+		{X: 4, Y: 1},
+		{X: 4, Y: 4},
+		{X: 1, Y: 4},
 	}
 	polygon := PolygonFromBlocks(blocks)
 	for i := 0; i < len(polygon); i++ {
 		expectedPt := expectedPolygon[i]
 		actualPt := polygon[i]
 
-		if *actualPt.X != *expectedPt.X || *actualPt.Y != *expectedPt.Y {
+		if actualPt.X != expectedPt.X || actualPt.Y != expectedPt.Y {
 			t.Errorf("Expected (%v, %v) got (%v, %v) for index %v",
-				*expectedPt.X, *expectedPt.Y, *actualPt.X, *actualPt.Y, i)
+				expectedPt.X, expectedPt.Y, actualPt.X, actualPt.Y, i)
 		}
 	}
 
@@ -102,7 +92,7 @@ func TestPolygonFromBlocks(t *testing.T) {
 
 func TestPolygonArea(t *testing.T) {
 	type test struct {
-		polygon      []*textract.Point
+		polygon      []*Point
 		expectedArea float64
 	}
 
@@ -130,37 +120,37 @@ func TestPolygonArea(t *testing.T) {
 
 func TestRegressionSegmentIntersect(t *testing.T) {
 	type test struct {
-		lr            *linearRegression
-		a             *textract.Point
-		b             *textract.Point
+		lr            *LinearRegression
+		a             *Point
+		b             *Point
 		doesIntersect bool
 	}
 
 	testCases := []test{
 		// intersects at 1,1
 		{
-			lr:            &linearRegression{slope: 0, intersection: 1},
+			lr:            &LinearRegression{Slope: 0, Intercept: 1},
 			a:             f(0, 0),
 			b:             f(2, 2),
 			doesIntersect: true,
 		},
 		// intersects at 2,2
 		{
-			lr:            &linearRegression{slope: 0.5, intersection: 1},
+			lr:            &LinearRegression{Slope: 0.5, Intercept: 1},
 			a:             f(0, 0),
 			b:             f(2, 2),
 			doesIntersect: true,
 		},
 		// lines are parallel
 		{
-			lr:            &linearRegression{slope: 1, intersection: 1},
+			lr:            &LinearRegression{Slope: 1, Intercept: 1},
 			a:             f(0, 0),
 			b:             f(2, 2),
 			doesIntersect: false,
 		},
 		// lines intersect outside line segment
 		{
-			lr:            &linearRegression{slope: 1, intersection: 1},
+			lr:            &LinearRegression{Slope: 1, Intercept: 1},
 			a:             f(0, 0),
 			b:             f(2, -2),
 			doesIntersect: false,
@@ -179,22 +169,22 @@ func TestRegressionSegmentIntersect(t *testing.T) {
 
 func TestPolygonsCreatedByCrossingLine(t *testing.T) {
 	type test struct {
-		polygon       []*textract.Point
-		lr            *linearRegression
-		topPolygon    []*textract.Point
-		bottomPolygon []*textract.Point
+		polygon       []*Point
+		lr            *LinearRegression
+		topPolygon    []*Point
+		bottomPolygon []*Point
 	}
 
 	testCases := []test{
 		{
 			polygon:       makePolygon([]float64{.1, .1, .5, .09, .5, .4, .9, .39}),
-			lr:            &linearRegression{slope: 0, intersection: .2},
+			lr:            &LinearRegression{Slope: 0, Intercept: .2},
 			topPolygon:    makePolygon([]float64{.1, .1, .5, .09, .5, .2, .37586, .2}),
 			bottomPolygon: makePolygon([]float64{.37586, .2, .5, .2, .5, .4, .9, .39}),
 		},
 		{
 			polygon:       makePolygon([]float64{1, 1, 5, 1, 5, 5, 5, 1}),
-			lr:            &linearRegression{slope: 1, intersection: 0},
+			lr:            &LinearRegression{Slope: 1, Intercept: 0},
 			topPolygon:    makePolygon([]float64{1, 1, 5, 1, 5, 5}),
 			bottomPolygon: makePolygon([]float64{1, 1, 5, 5, 5, 1}),
 		},
