@@ -6,9 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/montanaflynn/stats"
 	"groceryspend.io/server/services/ocr"
-	"groceryspend.io/server/utils"
 )
 
 // ReceiptImageSection is a general region of a receipt. Typically there are 4 parts:
@@ -126,33 +124,6 @@ func belowLinearRegressionLine(lr *ocr.LinearRegression, config *ImageReceiptPar
 	}
 }
 
-// NewReceiptImage creates a receipt image instance based on the textract response
-func NewReceiptImage(resp *ocr.Image, config *ImageReceiptParseConfig) *ReceiptImage {
-
-	retval := ReceiptImage{}
-
-	// find the header section
-	headerRegion, headerLine := findHeaderRegion(resp, config)
-	retval.HeaderSection = headerRegion
-
-	// find the summary section
-	summaryRegion, summaryLine := findSummaryRegion(resp, config)
-	retval.SummarySection = summaryRegion
-
-	// TODO: sanity checks: do any of the regions overlap?
-
-	// find the price section
-	// cheat: find all blocks that are a price between the header and summary
-	//				then only include the ones that are right most
-	// find the line item desc section (basically what's leftover should be
-	// the line item descriptions)
-	lineItemRegion, priceRegion := findLineItemAndPriceRegions(resp, config, headerLine, summaryLine)
-	retval.LineItemSection = lineItemRegion
-	retval.PriceSection = priceRegion
-
-	return &retval
-}
-
 func findPriceViaLinearRegression(block *ocr.Block, candidateBlocks []*ocr.Block, config *ImageReceiptParseConfig) (*ocr.Block, error) {
 	// calculate regression line for
 	topLine, bottomLine, err := calculateSlopesForBlock(block)
@@ -230,58 +201,11 @@ func populateSummary(rd *ReceiptDetail, ri *ReceiptImage, config *ImageReceiptPa
 		}
 	}
 
-	// TODO: check if total or taxes are empty
+	if rd.TotalCost == 0.0 {
+		return fmt.Errorf("total cost is zero")
+	}
 
 	return nil
-}
-
-func findSummaryRegion(resp *ocr.Image, config *ImageReceiptParseConfig) (*ReceiptImageSection, *ocr.LinearRegression) {
-
-	summaryDetailBlocks := []*ocr.Block{}
-
-	inSummaryDetails := false
-
-	isSummaryData := func(line string) bool {
-		return subtotalRegex.MatchString(line) ||
-			taxRegex.MatchString(line) ||
-			totalRegex.MatchString(line)
-	}
-	defaultFilter := defaultBlockFilter(config)
-
-	for _, block := range resp.Blocks {
-		if !defaultFilter(block) {
-			continue
-		}
-
-		if isSummaryData(block.Text) {
-			inSummaryDetails = true
-
-			summaryDetailBlocks = append(summaryDetailBlocks, block)
-
-		} else if inSummaryDetails {
-			// we have it the first line outside the header info section, so return what we have
-			break
-		}
-	}
-
-	// determine the polygon of the header details
-	summaryDetailPolygon := ocr.PolygonFromBlocks(summaryDetailBlocks)
-
-	// determine the bottom line for the header
-	topLineRegression, _, _ := calculateSlopesForPoints(summaryDetailPolygon)
-
-	println(fmt.Sprintf("Summary line %v slope, %v intercept", topLineRegression.Slope, topLineRegression.Intercept))
-
-	// find all blocks below the top line regression (include items that cross it)
-	filter := func(block *ocr.Block) bool {
-		return belowLinearRegressionLine(topLineRegression, config, config.blocksOnSummaryLineAreSummary)(block)
-	}
-	blocks := filterBlocks(resp.Blocks, filter)
-
-	return &ReceiptImageSection{
-		blocks:  blocks,
-		polygon: ocr.PolygonFromBlocks(blocks),
-	}, topLineRegression
 }
 
 func filterBlocks(blocks []*ocr.Block, filter BlockFilter) []*ocr.Block {
@@ -293,142 +217,6 @@ func filterBlocks(blocks []*ocr.Block, filter BlockFilter) []*ocr.Block {
 	}
 
 	return retval
-}
-
-func findHeaderRegion(
-	resp *ocr.Image,
-	config *ImageReceiptParseConfig) (*ReceiptImageSection, *ocr.LinearRegression) {
-
-	retval := ReceiptImageSection{}
-	headerDetailBlocks := []*ocr.Block{}
-
-	inHeaderDetails := false
-
-	isHeaderData := func(line string) bool {
-		return dateRegex.MatchString(line) ||
-			timeRegex.MatchString(line) ||
-			addressRegex.MatchString(line) ||
-			townCityZipRegex.MatchString(line) ||
-			cashierRegex.MatchString(line) ||
-			storeRegex.MatchString(line) ||
-			phoneNumberRegex.MatchString(line)
-	}
-	defaultFilter := defaultBlockFilter(config)
-
-	for _, block := range resp.Blocks {
-		if !defaultFilter(block) {
-			continue
-		}
-
-		if isHeaderData(block.Text) {
-			inHeaderDetails = true
-
-			headerDetailBlocks = append(headerDetailBlocks, block)
-
-		} else if inHeaderDetails {
-			// we have it the first line outside the header info section, so return what we have
-			break
-		}
-	}
-
-	// determine the polygon of the header details
-	headerDetailsPolygon := ocr.PolygonFromBlocks(headerDetailBlocks)
-
-	// determine the bottom line for the header
-	_, bottomLineRegression, _ := calculateSlopesForPoints(headerDetailsPolygon)
-
-	println(fmt.Sprintf("Header line %v slope, %v intercept", bottomLineRegression.Slope, bottomLineRegression.Intercept))
-
-	// find all blocks above the bottom line regression (include items that cross it)
-	filter := func(block *ocr.Block) bool {
-		return aboveLinearRegressionLine(bottomLineRegression, config, config.blocksOnHeaderLineAreHeader)(block)
-	}
-	blocks := filterBlocks(resp.Blocks, filter)
-	retval.blocks = blocks
-	retval.polygon = ocr.PolygonFromBlocks(blocks)
-	return &retval, bottomLineRegression
-}
-
-func findLineItemAndPriceRegions(
-	resp *ocr.Image,
-	config *ImageReceiptParseConfig,
-	headerLine *ocr.LinearRegression,
-	summaryLine *ocr.LinearRegression,
-) (*ReceiptImageSection, *ReceiptImageSection) {
-
-	// line items and prices should be between the header and summary
-	filter := func(block *ocr.Block) bool {
-		return aboveLinearRegressionLine(summaryLine, config, !config.blocksOnSummaryLineAreSummary)(block) &&
-			belowLinearRegressionLine(headerLine, config, !config.blocksOnHeaderLineAreHeader)(block)
-	}
-
-	lineItemAndPriceBlocks := filterBlocks(resp.Blocks, filter)
-
-	// now separate the two via regex. We will undoubtly find prices that belong in
-	// the description section, but we'll deal with that later
-	possiblePriceBlocks := []*ocr.Block{}
-	lineItemBlocks := []*ocr.Block{}
-
-	for _, block := range lineItemAndPriceBlocks {
-		if priceRegex.MatchString(block.Text) {
-			possiblePriceBlocks = append(possiblePriceBlocks, block)
-		} else if !departmentNamesRegex.MatchString(block.Text) {
-			lineItemBlocks = append(lineItemBlocks, block)
-		}
-	}
-
-	// now we need to figure out what prices are the final prices and which are
-	// unit prices. To do this, we'll create another regression line, then associate
-	// anything to the right of the line (within some tolerance) as being a final price
-	// we'll use the centroid of the block's polygon as the input for the lineaer regression
-	centroids := []*ocr.Point{}
-	coords := []stats.Coordinate{}
-	blockIds := []string{}
-	blockIDToBlock := make(map[string]*ocr.Block)
-	for _, possiblePriceBlock := range possiblePriceBlocks {
-		blockIDToBlock[possiblePriceBlock.ID] = possiblePriceBlock
-		centroid := ocr.Centroid(possiblePriceBlock)
-		centroids = append(centroids, centroid)
-		blockIds = append(blockIds, possiblePriceBlock.ID)
-		// IMPORTANT: we switch  Y and X because we want the X coord to be
-		//						the output and Y as the input
-		coordinate := stats.Coordinate{X: centroid.Y, Y: centroid.X}
-		coords = append(coords, coordinate)
-	}
-
-	centroidLinerRegression, err := stats.LinReg(coords)
-	if err != nil {
-		return nil, nil
-	}
-
-	// now going through the centroid regressions, and anything to the left
-	// gets put into the line item description bucket
-	priceBlocks := []*ocr.Block{}
-	for itr, regressionXValue := range centroidLinerRegression {
-		centroid := centroids[itr]
-		blockID := blockIds[itr]
-		block := blockIDToBlock[blockID]
-		// REMEMBER: the regression output is the x axis
-		if utils.IsGreaterThanWithinTolerance(regressionXValue.Y, centroid.X, config.regressionTolerance) {
-			priceBlocks = append(priceBlocks, block)
-		} else {
-			lineItemBlocks = append(lineItemBlocks, block)
-		}
-	}
-
-	lineItemBlocks = ocr.SortBlocksByLogicalOrder(resp, lineItemBlocks)
-
-	lineItemRegion := &ReceiptImageSection{
-		blocks:  lineItemBlocks,
-		polygon: ocr.PolygonFromBlocks(lineItemBlocks),
-	}
-
-	priceRegion := &ReceiptImageSection{
-		blocks:  priceBlocks,
-		polygon: ocr.PolygonFromBlocks(priceBlocks),
-	}
-
-	return lineItemRegion, priceRegion
 }
 
 func calculateSlopesForPoints(pts []*ocr.Point) (*ocr.LinearRegression, *ocr.LinearRegression, error) {
@@ -510,9 +298,7 @@ func createReceiptItems(
 			}
 
 			parsedPrice, err := ParsePrice(priceBlock.Text)
-			if discountRegex.MatchString(priceBlock.Text) {
-				parsedPrice = -parsedPrice
-			}
+
 			if err != nil {
 				return nil, fmt.Errorf("%s is not a parsable price", priceBlock.Text)
 			}
@@ -622,6 +408,8 @@ func ParseImageReceipt(resp *ocr.Image, expectedTotal float32, confidence float6
 		{false, true},
 	}
 
+	// We go through increasingly larger regression tolerances to find the best fit. In experiments, using a static
+	// tolerance value would work for some receipts and fail on other receipts.
 	for regressionTolerance := 0.0; regressionTolerance < 0.05; regressionTolerance += 0.01 {
 
 		for _, includeIntersectionOptions := range includeBlocksOnIntersectionToHeaderSummary {
@@ -633,9 +421,9 @@ func ParseImageReceipt(resp *ocr.Image, expectedTotal float32, confidence float6
 				blocksOnSummaryLineAreSummary: includeIntersectionOptions[1],
 				minArea:                       0.5,
 			}
-			ri := NewReceiptImage(resp, &config)
-			if ri == nil {
-				println(fmt.Sprintf("Failed to create receipt image"))
+			ri, err := NewReceiptImage(resp, expectedTotal, &config)
+			if err != nil {
+				println(err.Error())
 				continue
 			}
 

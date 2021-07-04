@@ -39,7 +39,8 @@ var discountRegex = regexp.MustCompile(fmt.Sprintf("-%s|%s-", priceRegexStr, pri
 var weightRegexStr = `(?i)(\d{1,3}\.\d{2}) (lb|1b|oz)`
 var weightRegex = regexp.MustCompile(weightRegexStr)
 
-// ParsePrice given a string, parse out the value
+// ParsePrice given a string, parse out the value. Can return negative values
+// for discounts
 func ParsePrice(s string) (float32, error) {
 	res := priceRegex.FindStringSubmatch(s)
 	if len(res) < 1 {
@@ -49,6 +50,10 @@ func ParsePrice(s string) (float32, error) {
 	val, err := strconv.ParseFloat(res[1], 32)
 	if err != nil {
 		return 0.0, err
+	}
+
+	if discountRegex.MatchString(s) {
+		val = -val
 	}
 
 	return float32(val), nil

@@ -173,13 +173,14 @@ func TestTextractResponse(t *testing.T) {
 	}
 
 	for _, testInstance := range tests {
-		t.Run(testInstance.file, func(t *testing.T) {
+		testName := testInstance.file[len(getTestDataDir())+1:]
+		t.Run(testName, func(t *testing.T) {
 			var response textract.DetectDocumentTextOutput
 			fileText := utils.ReadFileAsString(testInstance.file)
 			reader := strings.NewReader(fileText)
 			err := json.NewDecoder(reader).Decode(&response)
 			if err != nil {
-				println(err.Error())
+				t.Fatalf("failed to parse test response: %s", err.Error())
 			}
 
 			image, err := ocr.TextractResponseToImage(&response)
