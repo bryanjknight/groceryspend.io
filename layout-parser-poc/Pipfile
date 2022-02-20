@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+jupyterlab = "*"
+layoutparser = {extras = ["ocr"], version = "*"}
+matplotlib = "*"
+pandas = "*"
+numpy = "*"
+google-cloud-vision = "*"
+torchvision = "*"
+detectron2 = {ref = "v0.4", git = "https://github.com/facebookresearch/detectron2.git"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

@@ -7,6 +7,9 @@
 			"path": "infrastructure"
 		},
 		{
+			"path": "layout-parser-poc"
+		},		
+		{
 			"path": "model-generation"
 		},
 		{
