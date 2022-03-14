@@ -1,8 +1,11 @@
 {
 	"folders": [
 		{
-			"path": "browser-extension"
+			"path": "backend"
 		},
+		{
+			"path": "browser-extension"
+		},		
 		{
 			"path": "infrastructure"
 		},
