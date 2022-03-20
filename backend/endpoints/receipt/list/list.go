@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
-	"groceryspend.io/backend/internal"
+	"groceryspend.io/backend/services/parsing"
 )
 
 // Response is of type APIGatewayProxyResponse since we're leveraging the
@@ -29,7 +29,10 @@ func Handler(ctx context.Context) (Response, error) {
 	}
 	json.HTMLEscape(&buf, body)
 
-	requests := internal.ListParseReceiptRequests()
+	svc := parsing.NewDDbBSvc("test-groceryspendio")
+	requests, err := svc.ListParsingRequests()
+
+	// requests := internal.ListParseReceiptResults()
 
 	respBody, _ := json.Marshal(requests)
 
