@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -21,22 +19,16 @@ import (
 type Response events.APIGatewayProxyResponse
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
-func Handler(ctx context.Context) (Response, error) {
-	// var buf bytes.Buffer
+func Handler(ctx context.Context, request internal.ParseReceiptRequest) (Response, error) {
 
-	tmpRequest := internal.ParseReceiptRequest{
-		ID:    uuid.New().String(),
-		S3Loc: fmt.Sprintf("%v", time.Now()),
-	}
-
-	// json.HTMLEscape(&buf, body)
+	// always set the ID as opposed to trusting the ID sent from the client
+	request.ID = uuid.NewString()
 
 	svc := parsing.NewDDbBSvc("test-groceryspendio")
-	requests, err := svc.CreateParsingRequest(tmpRequest)
+	requests, err := svc.CreateParsingRequest(request)
 	if err != nil {
 		return Response{StatusCode: 500}, err
 	}
-	// requests := internal.ListParseReceiptResults()
 
 	respBody, _ := json.Marshal(requests)
 
